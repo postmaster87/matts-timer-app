@@ -66,9 +66,9 @@ F.append(Paragraph(
 
 F.append(Paragraph("The one rule that drives the layout", H2))
 F.append(Paragraph(
-    "<b>RESET restarts the selected preset and starts it immediately.</b> Between "
-    "back-to-back core sets that is one tap, not two. Both large buttons do this "
-    "once the timer has finished, so you can hit either one without looking.", BODY))
+    "<b>RESTART puts the clock back to the preset time and runs it immediately.</b> "
+    "Between back-to-back core sets that is one tap, not two. <b>RESET</b>, in the "
+    "middle, does the same thing but leaves it stopped - it never starts anything.", BODY))
 
 F.append(Paragraph("Presets", H2))
 F.append(Paragraph(
@@ -86,25 +86,35 @@ F.append(Paragraph(
     "The last custom value stays on the tile for one-tap recall, but it is never "
     "auto-selected at launch.", BODY))
 
-F.append(Paragraph("Buttons", H2))
+F.append(Paragraph("The three buttons", H2))
 F.append(table([
-    ["State", "Left (large)", "Right (large)"],
-    ["Ready", "START", "RESET - restarts &amp; runs"],
-    ["Running", "PAUSE", "RESET - restarts &amp; runs"],
-    ["Paused", "RESUME", "RESET - restarts &amp; runs"],
-    ["Finished", "GO AGAIN", "RESET - restarts &amp; runs"],
-    ["Stopwatch running", "STOP", "LAP"],
-    ["Stopwatch stopped", "START / RESUME", "RESET"],
-], [1.5 * inch, 1.9 * inch, 2.7 * inch]))
+    ["Button", "Timer", "Stopwatch"],
+    ["Left", "START / PAUSE / RESUME / GO AGAIN", "START / STOP / RESUME"],
+    ["Middle - RESET", "Back to the preset time, stopped", "Back to zero, clears laps"],
+    ["Right", "RESTART - back to the preset time <b>and runs</b>", "LAP"],
+], [1.3 * inch, 2.9 * inch, 1.9 * inch]))
 
-F.append(Paragraph("Sound and feedback", H2))
+F.append(Paragraph("Sound", H2))
+F.append(table([
+    ["Voice", "Character"],
+    ["BELL", "C major arpeggio landing on a full triad. Warm, the default"],
+    ["CHIME", "Falling G-E-C resolving to an open fifth. Calmer, longer ring"],
+    ["PULSE", "Three clipped tones then a high hold. Cuts through a loud gym"],
+    ["MUTE", "Silent - vibration still fires"],
+], [1.0 * inch, 5.1 * inch]))
+F.append(Spacer(1, 5))
 F.append(Paragraph(
-    "Soft bell tick at 3, 2, 1. At zero, a C-major arpeggio that lands on a full "
-    "triad and rings twice - every tone is a sine with a soft attack and a natural "
-    "decay, no buzzer. Screen goes red and flashes; the phone vibrates.", BODY))
+    "The header button cycles these and always shows the current one; each pick "
+    "plays a short preview. Changing voice or muting mid-set takes effect on the "
+    "next cue, with no restart.", BODY))
+
+F.append(Paragraph("At zero", H2))
 F.append(Paragraph(
-    "Sound and vibration toggle independently in the header and persist between "
-    "sessions. Cues play on the alarm stream so they carry over gym noise.", BODY))
+    "Soft tick at 3, 2, 1 in the selected voice, then the finish cue rung twice. "
+    "Screen goes red and flashes; the phone vibrates. Every tone is a sine with a "
+    "soft attack and a natural decay, synthesised on the device - no buzzer, no "
+    "audio files. Cues play on the alarm stream so they carry over gym noise, and "
+    "vibration toggles separately. Both settings persist.", BODY))
 
 F.append(Paragraph("Stopwatch", H2))
 F.append(Paragraph(

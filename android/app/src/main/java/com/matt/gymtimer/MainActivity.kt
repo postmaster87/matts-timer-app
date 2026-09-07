@@ -54,6 +54,7 @@ class MainActivity : Activity() {
 
     private var mode = MODE_TIMER
     private var sound = true
+    private var soundIdx = 0
     private var vibe = true
 
     private var padDigits = ""
@@ -78,6 +79,7 @@ class MainActivity : Activity() {
     private lateinit var lapsScroll: ScrollView
     private lateinit var lapsBox: LinearLayout
     private lateinit var btnGo: Button
+    private lateinit var btnMid: Button
     private lateinit var btnAlt: Button
     private lateinit var padOverlay: LinearLayout
     private lateinit var padVal: TextView
@@ -216,6 +218,7 @@ class MainActivity : Activity() {
         lapsScroll = findViewById(R.id.lapsScroll)
         lapsBox = findViewById(R.id.lapsBox)
         btnGo = findViewById(R.id.btnGo)
+        btnMid = findViewById(R.id.btnMid)
         btnAlt = findViewById(R.id.btnAlt)
         padOverlay = findViewById(R.id.padOverlay)
         padVal = findViewById(R.id.padVal)
@@ -224,12 +227,20 @@ class MainActivity : Activity() {
         padSet = findViewById(R.id.padSet)
 
         btnGo.setOnClickListener { onGo() }
+        btnMid.setOnClickListener { onMid() }
         btnAlt.setOnClickListener { onAlt() }
         tabTimer.setOnClickListener { setMode(MODE_TIMER) }
         tabSw.setOnClickListener { setMode(MODE_SW) }
         togSound.setOnClickListener {
-            sound = !sound; savePrefs(); syncToggles()
-            if (sound) tones.play(tones.pick)
+            when {
+                !sound -> { sound = true; soundIdx = 0 }
+                soundIdx < tones.voices.size - 1 -> soundIdx++
+                else -> sound = false
+            }
+            savePrefs(); syncToggles()
+            // cues read `sound` and the voice when they fire, so a live set needs
+            // no rescheduling - the change takes effect on the next tick
+            if (sound) tones.play(voice().preview)
         }
         togVibe.setOnClickListener {
             vibe = !vibe; savePrefs(); syncToggles()
@@ -246,15 +257,19 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun voice(): Tones.Voice =
+        tones.voices[soundIdx.coerceIn(0, tones.voices.size - 1)]
+
     private fun loadPrefs() {
         sound = prefs.getBoolean("sound", true)
+        soundIdx = prefs.getInt("soundIdx", 0).coerceIn(0, tones.voices.size - 1)
         vibe = prefs.getBoolean("vibe", true)
         customSec = prefs.getInt("customSec", 0)
     }
 
     private fun savePrefs() {
-        prefs.edit().putBoolean("sound", sound).putBoolean("vibe", vibe)
-            .putInt("customSec", customSec).apply()
+        prefs.edit().putBoolean("sound", sound).putInt("soundIdx", soundIdx)
+            .putBoolean("vibe", vibe).putInt("customSec", customSec).apply()
     }
 
     // ------------------------------------------------------------- chrome
@@ -288,6 +303,7 @@ class MainActivity : Activity() {
         barFill.pivotX = 0f
         padOverlay.setBackgroundColor(Color.rgb(6, 9, 13))
         btnAlt.maxLines = 2
+        btnMid.maxLines = 2
         digits.setTextColor(cText)
         syncToggles()
     }
@@ -297,9 +313,9 @@ class MainActivity : Activity() {
             if (sound) cLine else null)
         styleBtn(togVibe, if (vibe) cPanel2 else cPanel, if (vibe) cCyan else cTogOff, 12f,
             if (vibe) cLine else null)
-        togSound.text = if (sound) "SND" else "MUTE"
+        togSound.text = if (sound) voice().name else "MUTE"
         togVibe.text = if (vibe) "VIB" else "OFF"
-        togSound.textSize = if (sound) 15f else 12f
+        togSound.textSize = 12f
         togVibe.textSize = if (vibe) 15f else 13f
     }
 
@@ -495,7 +511,7 @@ class MainActivity : Activity() {
     private fun scheduleCues(msLeft: Long) {
         for (n in 3 downTo 1) {
             val d = msLeft - n * 1000L
-            if (d > 50) postCue(d) { if (sound) tones.play(tones.tick) }
+            if (d > 50) postCue(d) { if (sound) tones.play(voice().tick) }
         }
         postCue(msLeft) { timerFinish() }
     }
@@ -507,7 +523,7 @@ class MainActivity : Activity() {
         finished = false
         clearCues()
         scheduleCues(remainMs)
-        if (sound) tones.play(tones.go)
+        if (sound) tones.play(voice().go)
         buzz(60)
         keepAwake(true)
         syncPresets()
@@ -532,7 +548,7 @@ class MainActivity : Activity() {
         running = false
         remainMs = 0
         finished = true
-        if (sound) tones.play(tones.chime)
+        if (sound) tones.play(voice().chime)
         buzzPattern(longArrayOf(0, 300, 120, 300, 120, 500))
         keepAwake(false)
         syncPresets()
@@ -554,7 +570,7 @@ class MainActivity : Activity() {
     private fun swStart() {
         swBase = SystemClock.elapsedRealtime() - swElapsed
         swRunning = true
-        if (sound) tones.play(tones.go)
+        if (sound) tones.play(voice().go)
         buzz(50)
         keepAwake(true)
         loopOn()
@@ -637,9 +653,26 @@ class MainActivity : Activity() {
         }
     }
 
+    /** middle button: back to the original time, stopped - never starts anything */
+    private fun onMid() {
+        if (mode == MODE_TIMER) timerBack() else swReset()
+    }
+
+    private fun timerBack() {
+        clearCues()
+        loopOff()
+        stopFlash()
+        remainMs = presetSec * 1000L
+        running = false
+        finished = false
+        keepAwake(false)
+        syncPresets()
+        render()
+    }
+
     private fun onAlt() {
         if (mode == MODE_TIMER) timerReset()
-        else if (swRunning) swLap() else swReset()
+        else if (swRunning) swLap()
     }
 
     private fun setMode(m: String) {
@@ -718,14 +751,11 @@ class MainActivity : Activity() {
 
     private fun pad2(v: Long) = v.toString().padStart(2, '0')
 
-    private fun altResetLabel(): CharSequence {
-        val sb = SpannableStringBuilder("RESET\nRESTARTS & RUNS")
-        val s = 6
-        sb.setSpan(RelativeSizeSpan(0.42f), s, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        sb.setSpan(
-            ForegroundColorSpan(Color.argb(190, 4, 32, 46)), s, sb.length,
-            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
+    private fun twoLine(head: String, sub: String, subColor: Int): CharSequence {
+        val sb = SpannableStringBuilder(head).append('\n').append(sub)
+        val start = head.length + 1
+        sb.setSpan(RelativeSizeSpan(0.42f), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sb.setSpan(ForegroundColorSpan(subColor), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         return sb
     }
 
@@ -776,7 +806,13 @@ class MainActivity : Activity() {
                 else -> "START"
             }
             styleBtn(btnGo, if (running) cAmber else cGreen, cInkGreen, 16f)
-            btnAlt.text = altResetLabel()
+
+            btnMid.text = twoLine("RESET", "BACK TO " + presetLabel(presetSec).uppercase(), cDim)
+            styleBtn(btnMid, cPanel2, cText, 16f, cLine)
+            btnMid.isEnabled = true
+            btnMid.alpha = 1f
+
+            btnAlt.text = twoLine("RESTART", "RESETS & RUNS", SUB_ON_CYAN)
             styleBtn(btnAlt, cCyan, cInkCyan, 16f)
             btnAlt.isEnabled = true
             btnAlt.alpha = 1f
@@ -788,11 +824,17 @@ class MainActivity : Activity() {
 
             btnGo.text = if (swRunning) "STOP" else if (e > 0) "RESUME" else "START"
             styleBtn(btnGo, if (swRunning) cAmber else cGreen, cInkGreen, 16f)
-            btnAlt.text = if (swRunning) "LAP" else "RESET"
+
+            btnMid.text = "RESET"
+            styleBtn(btnMid, cPanel2, cText, 16f, cLine)
+            val canReset = e > 0 || laps.isNotEmpty()
+            btnMid.isEnabled = canReset
+            btnMid.alpha = if (canReset) 1f else 0.35f
+
+            btnAlt.text = "LAP"
             styleBtn(btnAlt, cCyan, cInkCyan, 16f)
-            val can = swRunning || e > 0 || laps.isNotEmpty()
-            btnAlt.isEnabled = can
-            btnAlt.alpha = if (can) 1f else 0.3f
+            btnAlt.isEnabled = swRunning
+            btnAlt.alpha = if (swRunning) 1f else 0.35f
         }
     }
 
@@ -823,5 +865,6 @@ class MainActivity : Activity() {
         private const val DEFAULT_SEC = 35
         private const val MODE_TIMER = "timer"
         private const val MODE_SW = "stopwatch"
+        private val SUB_ON_CYAN = Color.argb(190, 4, 32, 46)
     }
 }
