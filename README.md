@@ -19,7 +19,7 @@ Install: `dist/MattsTimer.apk`  ·  Reading copy: `docs/TIMER.pdf`
 | `android/app/src/main/res/layout/` | Portrait layout; `layout-land/` is the two-column landscape one |
 | `dist/MattsTimer.apk` | Installable release build |
 | `tools/make_android_icons.py` | Regenerates launcher icons (pure stdlib) |
-| `index.html`, `sw.js`, `manifest.webmanifest`, `icons/` | Earlier browser version, superseded by the Android app |
+| `tools/make_pdf.py` | Regenerates `docs/TIMER.pdf` |
 
 ## Behavior
 
