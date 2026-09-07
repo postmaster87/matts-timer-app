@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="btn_h">78dp</dimen>
+    <dimen name="preset_h">42dp</dimen>
+    <dimen name="pad_btn_h">54dp</dimen>
+    <dimen name="digits_max">130sp</dimen>
+</resources>
