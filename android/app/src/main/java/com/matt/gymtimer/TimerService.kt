@@ -134,8 +134,17 @@ class TimerService : Service() {
     }
 
     // ---------------------------------------------------------- notification
+    /**
+     * DEFAULT importance, not LOW: Samsung keeps a silent (LOW) notification off
+     * the lock screen as a small icon in the top row instead of a card with the
+     * countdown and the buttons [measured, 2026-09-20, n=1 on RFGL4275NVH]. An
+     * existing channel's importance cannot be raised, so this is a new channel
+     * id and the old one is deleted. Silent all the same: no sound, no
+     * vibration, and setOnlyAlertOnce on the notification keeps state changes
+     * from popping a banner. The engine makes every sound.
+     */
     private fun channel() {
-        val ch = NotificationChannel(CH, "Timer", NotificationManager.IMPORTANCE_LOW)
+        val ch = NotificationChannel(CH, "Timer", NotificationManager.IMPORTANCE_DEFAULT)
         ch.setSound(null, null)          // the engine makes the sounds, not this
         ch.enableVibration(false)
         ch.setShowBadge(false)
@@ -143,6 +152,10 @@ class TimerService : Service() {
         ch.description = "The running timer, on the lock screen"
         try {
             nm.createNotificationChannel(ch)
+        } catch (_: Exception) {
+        }
+        try {
+            nm.deleteNotificationChannel(CH_OLD)
         } catch (_: Exception) {
         }
     }
@@ -168,6 +181,11 @@ class TimerService : Service() {
             .setContentIntent(
                 PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE)
             )
+        // show the card at once instead of after the system's ~10 s foreground
+        // service deferral - the lock screen is where he looks first
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+        }
 
         val set = "Timer  ·  " + e.presetLabel(e.presetSec)
         when {
@@ -203,7 +221,8 @@ class TimerService : Service() {
     }
 
     companion object {
-        private const val CH = "timer"
+        private const val CH = "timer_v2"
+        private const val CH_OLD = "timer"   // IMPORTANCE_LOW; deleted on create
         private const val NID = 7
 
         const val ACT_PAUSE = "com.matt.gymtimer.PAUSE"

@@ -48,14 +48,28 @@ start. In the stopwatch the middle button is still RESET; the right one is LAP.
 **Presets lock while the timer is running** (dimmed, inert) so a stray tap
 mid-set cannot wipe a live timer. Pause or finish first to change duration.
 
-**Tap the clock to set a one-off time.** With the timer stopped - ready, paused
-or finished - tapping the digits opens two wheels, minutes and seconds. Flick
-them, or tap a number and type it. `SET & START` applies the value and starts
-it in one tap, the same path RESTART takes; RESET and RESTART then return to
-that value until a preset is tapped. CANCEL or the back button closes it. The
-ready line says `TAP TO SET` as the reminder. Tapping the clock while the timer
-is running, or in the stopwatch, does nothing [design]. The keypad screen and
-the CUSTOM tile are gone.
+**Tap the clock to set a one-off time.** His words, 2026-09-20: *"give me the
+ability to touch the clock when it is not running and manual enter a time or
+scroll - should be quick, simple and easy to interface with"*. With the timer
+stopped - ready, paused or finished - tapping the digits opens two wheels,
+minutes and seconds. Flick them, or tap a number and type it. `SET & START`
+applies the value and starts it in one tap, the same path RESTART takes; RESET
+and RESTART then return to that value until a preset is tapped. CANCEL or the
+back button closes it. The ready line says `TAP TO SET` as the reminder.
+Tapping the clock while the timer is running, or in the stopwatch, does nothing
+[design]. The keypad screen and the CUSTOM tile are gone.
+
+**Typing raises a number pad, and its check key sets the time and starts it.**
+One key, no reaching for `SET & START` after it [design]. Typing `12` into the
+seconds wheel still means 12, and minutes still run 0-99. Both buttons stay
+above the keyboard while it is up: the window is padded by whichever is taller,
+the navigation bar or the keyboard, so the wheels are what gives - they can
+shrink or clip in landscape - and the buttons never do [design]. Closing the
+picker any way at all drops the keyboard with it, and at `0:00` the check key
+just commits the value and drops the keyboard, because there is nothing to
+start [design]. Before this the seconds wheel raised the full QWERTY keyboard
+and it covered CANCEL and `SET & START` [measured, 2026-09-20, n=1 on his
+phone]. [phone behavior verify, n=0]
 
 **Finish** — the digits go red, the line reads `TIME`, the phone vibrates, and
 both large buttons restart the set. **The stage flashes for exactly as long as
@@ -117,6 +131,21 @@ buzz lands with the screen off [design; phone behavior verify, n=0]. The
 service stops itself
 the moment nothing is live. Android 13 and up asks once, on the first start,
 whether the app may post notifications; the timer runs either way [design].
+
+**The lock-screen card.** His words, 2026-09-20: *"If the app is closed the
+timer should stay running and available on the lock screen."* The notification
+sits on the channel `timer_v2` at **default** importance, so the phone draws it
+as a card with the countdown and the buttons instead of the small icon a
+low-importance channel was given on his lock screen [measured, 2026-09-20, n=1:
+the old `timer` channel, IMPORTANCE_LOW, showed as an icon in the top row and
+nothing else]. It is still silent - the channel sets no sound and no vibration,
+and the notification alerts only once, so PAUSE, RESUME and RESTART never pop a
+banner; every sound comes from the timer itself [design]. The old channel is
+deleted the first time the service starts. On Android 12 and up the card
+appears at once rather than after the system's ten-second foreground-service
+delay [design]. Whether the lock screen draws cards or icons is **also** his own
+Samsung setting for lock-screen notifications - a phone setting, not the app's
+[verify, n=0]. [phone behavior verify, n=0]
 
 **The music ducks at the end.** Three seconds from zero the app takes transient
 audio focus, so whatever is playing in his headphones drops under the 3-2-1

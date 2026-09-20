@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
@@ -18,8 +19,12 @@ import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.NumberPicker
@@ -50,6 +55,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
     private lateinit var prefs: SharedPreferences
     private val h = Handler(Looper.getMainLooper())
 
+    private lateinit var root: FrameLayout
     private lateinit var tabs: LinearLayout
     private lateinit var tabTimer: Button
     private lateinit var tabSw: Button
@@ -216,6 +222,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
     }
 
     private fun bind() {
+        root = findViewById(R.id.root)
         tabs = findViewById(R.id.tabs)
         tabTimer = findViewById(R.id.tabTimer)
         tabSw = findViewById(R.id.tabSw)
@@ -256,10 +263,43 @@ class MainActivity : Activity(), TimerEngine.Listener {
             pickMin.clearFocus(); pickSec.clearFocus()
             val sec = pickMin.value * 60 + pickSec.value
             if (sec <= 0) return@setOnClickListener
-            closePicker()
-            askNotif()
-            TimerEngine.setAndStart(sec)     // SET & START - the RESTART path
+            setAndStart(sec)                 // SET & START - the RESTART path
         }
+
+        insetPad()
+    }
+
+    /**
+     * The number pad must never sit over CANCEL and SET & START. The window is
+     * edge-to-edge (targetSdk 35), so the keyboard does not shrink it by itself:
+     * the bottom padding here does, by the larger of the navigation bar and the
+     * IME. The wheels are what gives - they are the weighted child - and the two
+     * buttons keep their full height above the keyboard, portrait and landscape.
+     *
+     * This listener replaces the root's fitsSystemWindows handling, so it carries
+     * the system-bar padding too, and consumes: nothing below it re-applies them.
+     * Re-registered by [bind] after every rotation rebuild.
+     */
+    private fun insetPad() {
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val bars = insets.getInsets(
+                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+                )
+                val ime = insets.getInsets(WindowInsets.Type.ime()).bottom
+                v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime))
+                WindowInsets.CONSUMED
+            } else {
+                @Suppress("DEPRECATION")
+                v.setPadding(
+                    insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
+                    insets.systemWindowInsetRight, insets.systemWindowInsetBottom
+                )
+                @Suppress("DEPRECATION")
+                insets.consumeSystemWindowInsets()
+            }
+        }
+        root.requestApplyInsets()
     }
 
     // ------------------------------------------------------------- chrome
@@ -383,6 +423,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
                 np.setTextSize(dp(30f))
                 np.selectionDividerHeight = dp(2f).toInt()
             }
+            typeable(np)
         }
         pickMin.setOnValueChangedListener { _, _, v -> pickMinVal = v; paintPick() }
         pickSec.setOnValueChangedListener { _, _, v -> pickSecVal = v; paintPick() }
@@ -392,6 +433,72 @@ class MainActivity : Activity(), TimerEngine.Listener {
         styleBtn(pickCancel, cPanel2, cText, 14f, cLine)
         styleBtn(pickSet, cCyan, cInkCyan, 14f)
         paintPick()
+    }
+
+    /**
+     * Which keyboard a wheel raises is decided by its own EditText. The seconds
+     * wheel carries displayedValues ("00".."59") and NumberPicker puts a TEXT
+     * input type on the field when it has them - which is why tapping a number
+     * brought up the full QWERTY keyboard on the phone [measured, 2026-09-20,
+     * n=1]. Forced back to a number pad here. NumberPicker's own input filter is
+     * left alone, so typing 12 still means 12 and minutes still stop at 99.
+     */
+    private fun typeable(np: NumberPicker) {
+        val et = pickInput(np) ?: return
+        et.inputType = InputType.TYPE_CLASS_NUMBER
+        // DONE = the check key; NO_EXTRACT_UI keeps landscape keyboards from
+        // taking the whole screen and hiding the two buttons
+        et.imeOptions = EditorInfo.IME_ACTION_DONE or EditorInfo.IME_FLAG_NO_EXTRACT_UI
+        et.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                commitTyped()
+                true
+            } else false
+        }
+    }
+
+    /** the wheel's inner field - a direct child of the framework NumberPicker */
+    private fun pickInput(np: NumberPicker): EditText? {
+        for (i in 0 until np.childCount) {
+            val c = np.getChildAt(i)
+            if (c is EditText) return c
+        }
+        return null
+    }
+
+    /**
+     * The check key on the number pad: commit what was typed - clearing focus is
+     * what makes NumberPicker validate it - and then take the same path SET &
+     * START takes. At 0:00 there is nothing to start, so it commits and drops
+     * the keyboard, leaving the wheels up.
+     */
+    private fun commitTyped() {
+        pickMin.clearFocus()
+        pickSec.clearFocus()
+        pickMinVal = pickMin.value
+        pickSecVal = pickSec.value
+        paintPick()
+        val sec = pickMinVal * 60 + pickSecVal
+        if (sec <= 0) {
+            hideKeyboard()
+            return
+        }
+        setAndStart(sec)
+    }
+
+    /** SET & START, from the button or from the keyboard's check key */
+    private fun setAndStart(sec: Int) {
+        closePicker()
+        askNotif()
+        TimerEngine.setAndStart(sec)
+    }
+
+    private fun hideKeyboard() {
+        try {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(pickOverlay.windowToken, 0)
+        } catch (_: Exception) {
+        }
     }
 
     private fun paintPick() {
@@ -412,7 +519,11 @@ class MainActivity : Activity(), TimerEngine.Listener {
         TimerEngine.buzz(15)
     }
 
+    /** CANCEL, SET & START, the back button, a tab, a state change: the keyboard goes with it */
     private fun closePicker() {
+        pickMin.clearFocus()
+        pickSec.clearFocus()
+        hideKeyboard()
         pickOverlay.visibility = View.GONE
         pickOpen = false
     }

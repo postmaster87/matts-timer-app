@@ -93,6 +93,13 @@ F.append(Paragraph(
     "is tapped. CANCEL or the back button closes it, and the ready line reads "
     "TAP TO SET as the reminder. Tapping the clock while it is running, or in the "
     "stopwatch, does nothing.", BODY))
+F.append(Paragraph(
+    "<b>Typing raises a number pad, not the full keyboard, and its check key sets "
+    "the time and starts it</b> - one key, nothing to reach for afterwards. CANCEL "
+    "and SET &amp; START stay above the keyboard the whole time it is up: the "
+    "wheels are what gives way, never the buttons. Closing the picker drops the "
+    "keyboard with it, and at 0:00 the check key just puts the value in, since "
+    "there is nothing to start.", BODY))
 
 F.append(Paragraph("The three buttons", H2))
 F.append(table([
@@ -177,6 +184,16 @@ F.append(Paragraph(
     "while running, RESUME and RESTART while paused, RESTART at TIME, STOP for the "
     "stopwatch. Tapping the notification opens the app on the live set, and the "
     "service stops itself the moment nothing is live.", BODY))
+F.append(Paragraph(
+    "The notification sits on a <b>default-importance</b> channel, so the phone "
+    "draws it on the lock screen as a card with the countdown and the buttons "
+    "rather than as a small icon in the top row - which is what the old silent "
+    "channel got. It stays silent all the same: no sound, no vibration, and it "
+    "alerts only once, so PAUSE, RESUME and RESTART never pop a banner - every "
+    "sound comes from the timer itself. On Android 12 and up the card shows "
+    "immediately instead of ten seconds in. Whether your lock screen draws cards "
+    "or icons at all is also a phone setting of your own (Samsung: lock-screen "
+    "notification style), which the app does not touch.", BODY))
 F.append(Paragraph(
     "A partial wake lock is held while the countdown runs, and then for the whole "
     "ring-out at TIME, so every repeat of the chime and the buzz lands with the "
