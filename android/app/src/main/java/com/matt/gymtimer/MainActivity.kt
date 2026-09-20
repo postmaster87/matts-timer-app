@@ -411,9 +411,16 @@ class MainActivity : Activity(), TimerEngine.Listener {
         pickMin.minValue = 0
         pickMin.maxValue = 99
         pickMin.wrapSelectorWheel = true
+        // A formatter, NOT displayedValues. With displayed values NumberPicker
+        // matches typed text against them by prefix, so a typed 5 completed to
+        // the first label starting with 5 - "50" - instead of 05 [measured,
+        // 2026-09-20, n=1]. With none, typed text is parsed as an integer and
+        // the filter caps it at 59, while the formatter keeps the wheel reading
+        // 00..59. Set before the range so the wheel's string cache is built
+        // with it.
+        pickSec.setFormatter { v -> two(v) }
         pickSec.minValue = 0
         pickSec.maxValue = 59
-        pickSec.displayedValues = SEC_LABELS
         pickSec.wrapSelectorWheel = true
 
         for (np in arrayOf(pickMin, pickSec)) {
@@ -429,6 +436,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
         pickSec.setOnValueChangedListener { _, _, v -> pickSecVal = v; paintPick() }
         pickMin.value = pickMinVal
         pickSec.value = pickSecVal
+        showSecText()
 
         styleBtn(pickCancel, cPanel2, cText, 14f, cLine)
         styleBtn(pickSet, cCyan, cInkCyan, 14f)
@@ -457,6 +465,21 @@ class MainActivity : Activity(), TimerEngine.Listener {
         }
     }
 
+    private fun two(v: Int) = v.toString().padStart(2, '0')
+
+    /**
+     * NumberPicker re-runs its formatter over the input field only when the
+     * value actually changes (setValueInternal returns early otherwise), so a
+     * wheel opened on the value it already holds - or left showing what was
+     * typed into it - can read "5" while the rows above and below read "05".
+     * The field is seeded by hand here. The reflection trick on the framework's
+     * private changeValueByOne is not used: it is a non-SDK interface, blocked
+     * at this targetSdk, and it would move the value to do it.
+     */
+    private fun showSecText() {
+        pickInput(pickSec)?.setText(two(pickSec.value))
+    }
+
     /** the wheel's inner field - a direct child of the framework NumberPicker */
     private fun pickInput(np: NumberPicker): EditText? {
         for (i in 0 until np.childCount) {
@@ -477,6 +500,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
         pickSec.clearFocus()
         pickMinVal = pickMin.value
         pickSecVal = pickSec.value
+        showSecText()
         paintPick()
         val sec = pickMinVal * 60 + pickSecVal
         if (sec <= 0) {
@@ -513,6 +537,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
         pickSecVal = sec % 60
         pickMin.value = pickMinVal
         pickSec.value = pickSecVal
+        showSecText()
         paintPick()
         pickOverlay.visibility = View.VISIBLE
         pickOpen = true
@@ -805,6 +830,5 @@ class MainActivity : Activity(), TimerEngine.Listener {
         private const val MODE_TIMER = "timer"
         private const val MODE_SW = "stopwatch"
         private val SUB_ON_CYAN = Color.argb(190, 4, 32, 46)
-        private val SEC_LABELS = Array(60) { it.toString().padStart(2, '0') }
     }
 }

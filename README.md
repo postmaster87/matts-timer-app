@@ -60,8 +60,13 @@ Tapping the clock while the timer is running, or in the stopwatch, does nothing
 [design]. The keypad screen and the CUSTOM tile are gone.
 
 **Typing raises a number pad, and its check key sets the time and starts it.**
-One key, no reaching for `SET & START` after it [design]. Typing `12` into the
-seconds wheel still means 12, and minutes still run 0-99. Both buttons stay
+One key, no reaching for `SET & START` after it [design]. **What he types is
+read as a number**: `5` in the seconds wheel is 05, `12` is 12, `0` is zero,
+and minutes read the same way and still run 0-99 [design]. The seconds wheel
+used to carry the labels `00`-`59` as a list, and the framework completed a
+typed `5` to the first label starting with 5 - `50`; it carries a two-digit
+formatter instead now, so the wheel still reads `00`-`59` and the typed text is
+parsed as an integer [measured, 2026-09-20, n=1 for the old behavior]. Both buttons stay
 above the keyboard while it is up: the window is padded by whichever is taller,
 the navigation bar or the keyboard, so the wheels are what gives - they can
 shrink or clip in landscape - and the buttons never do [design]. Closing the

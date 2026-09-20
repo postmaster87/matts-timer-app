@@ -95,7 +95,9 @@ F.append(Paragraph(
     "stopwatch, does nothing.", BODY))
 F.append(Paragraph(
     "<b>Typing raises a number pad, not the full keyboard, and its check key sets "
-    "the time and starts it</b> - one key, nothing to reach for afterwards. CANCEL "
+    "the time and starts it</b> - one key, nothing to reach for afterwards. What "
+    "you type is read as a number: 5 in the seconds wheel is five seconds, 12 is "
+    "twelve, and the minutes wheel reads the same way. CANCEL "
     "and SET &amp; START stay above the keyboard the whole time it is up: the "
     "wheels are what gives way, never the buttons. Closing the picker drops the "
     "keyboard with it, and at 0:00 the check key just puts the value in, since "
