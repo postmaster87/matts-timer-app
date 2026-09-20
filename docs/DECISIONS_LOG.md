@@ -173,3 +173,55 @@ adb command until it reports done. Install permission from Matt stands
 ("Yes you can install what is needed on my PC and Phone"); confirm with
 him when the phone comes back before running it.
 
+## 2026-09-20 - Phone check 1 of the e5226d2 build (Fable, adb-driven) - NOT DONE, 2 findings
+
+Matt's words: "yes go ahead and install" and "make sure you test it".
+Installed with `adb -s RFGL4275NVH install -r` (Success; settings kept:
+voice PULSE, VIB on). Driven by adb taps; state read from dumpsys
+(activity services, power, audio, notification) and screenshots. Every
+line below is [measured, n=1] on his phone unless it says otherwise.
+
+PASS
+- Nine presets with 15m sixth; no CUSTOM tile. Tap clock opens the wheels
+  at the current preset; flick moves a wheel (35 to 34); typing 12 works.
+- First start raised "Allow Timer to send you notifications?"; the set
+  ran behind the prompt; Allowed (POST_NOTIFICATIONS granted, USER_SET).
+- Running: foreground service (specialUse), wake lock `matttimer:run`
+  held, notification RUNNING with PAUSE + RESTART, vis PUBLIC. Paused:
+  "PAUSED 0:43", RESUME + RESTART, wake lock released. Finished: TIME,
+  RESTART. RESET: focus 0, service 0, notification 0.
+- Duck: focus entry GAIN_TRANSIENT_MAY_DUCK / USAGE_ALARM present at 3 s
+  left, held through TIME, held after the ring ended and after a tab tap,
+  gone after RESET/RESTART.
+- Ring-out: chime every 5.0 s on PULSE (predicted 4.989 s); last chime
+  120 s after the finish; then wake lock released, flash stopped, static
+  red TIME.
+- STOPWATCH tab tap at TIME: no chime after the tap (12 s watched).
+- Left the app (HOME) and swiped the card out of recents while ringing:
+  same pid, service foreground, chimes kept coming.
+- Stopwatch with the app left: notification STOPWATCH with STOP, no wake
+  lock; elapsed right on return; service gone once stopped.
+- Screen off (35 s set, phone Dozing): go 11:02:36.592, ticks +32.02,
+  +33.00, +34.00 s, chime +35.00 s, repeats every 5 s.
+- No crash in logcat.
+
+FINDINGS (not fixed)
+1. Typing in a wheel opens the full QWERTY keyboard, which covers CANCEL
+   and SET & START until the keyboard's check key is pressed. Not "quick,
+   simple and easy". Flicking is unaffected.
+2. On his lock screen the timer shows only as a small icon in the top
+   row, not as a card with the countdown and PAUSE / RESTART. Cause not
+   yet separated [verify]: the channel is IMPORTANCE_LOW (silent), and
+   Samsung's lock-screen notification style may be set to icons - a phone
+   setting, his call (global Section 12 item 17).
+
+NOT TESTED by adb: how deep Spotify ducks and whether the chime climb is
+audible (his ears, headphones, Spotify playing); rotation with the picker
+open (would need a rotation setting change); lock-screen buttons (phone
+locked, PIN is his); process-kill restore and the ten-minute rule; pause
+at 0:00.
+
+State left: phone locked, screen on lock screen, timer at TIME for a 35 s
+set (ring ends by itself at 2 min; music focus held until RESET/RESTART).
+`dist/MattsTimer.apk` not replaced - the check has not passed.
+
