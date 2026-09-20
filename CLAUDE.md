@@ -24,11 +24,12 @@ shape as matts-doc-reader and matts-calendar-app (both flipped 2026-09-18).
   feature is not DONE until its phone check passes.
 - **Fable-owned code [ACCEPTED by Matt 2026-09-20, his word: "8. accept";
   `docs/handoff/FOR_FABLE_LOG.md`].** Everything that
-  decides when the timer ends and whether he hears it: in
-  `MainActivity.kt` today, the countdown state and clock math
+  decides when the timer ends and whether he hears it: since v2
+  (f0071a1) all of `TimerEngine.kt` and `TimerService.kt`: the countdown state and clock math
   (`timerStart`, `timerPause`, `timerFinish`, `timerReset`, `endsAt`,
-  `remainMs`), the tick loop (`tick`, `loopOn`, `loopOff`), the cue
-  scheduler (`scheduleCues`, `postCue`, `clearCues`), the stopwatch clock
+  `remainMs`), the cue scheduler and finish (`scheduleCues`, `postCue`, `clearCues`,
+  `finishCue`), audio focus (`focusRequest`, `focusAbandon`), `persist` /
+  `restore`, the wake lock and the notification, the stopwatch clock
   math (`swStart`, `swStop`, `swLap`, `swBase`, `swElapsed`), and
   `keepAwake`; plus anything added later that keeps a timer alive or
   fires its finish when the screen is off or the app is in the background

@@ -27,14 +27,17 @@ WAKE_LOCK accepted ("all 3" read as the three bullets, four lines - said
 back to him in chat); (7) survives leaving the app, screen off and swipe
 from recents, stopwatch too, PAUSE and RESTART on the lock screen.
 
-Open after the build: Fable's line-by-line review, then the phone check.
+Built at f0071a1, reviewed and signed by Fable (`docs/DECISIONS_LOG.md`). Open: the phone check, item 2.
 
-## 2. Phone serial - confirm with Matt at the first phone check
+## 2. Phone check of v2 - WAITING on Matt
 
-`adb devices` showed no device attached on 2026-09-20 [measured, n=1].
-matts-calendar-app's CLAUDE.md names `RFGL4275NVH` as his phone [verify -
-read from another repo, not confirmed here]. Confirm the serial with him
-before the first adb command that names it.
+Serial `RFGL4275NVH`, his words 2026-09-20: "Trust the serial is correct."
+Also his words: "I have another session working on my phone so don't
+interrupt it... Once that session is done you can ask me for permission to
+build and test on my phone." No adb command of any kind until he says that
+session is done; then ask permission, then install f0071a1's build and run
+the ten checks in `docs/DECISIONS_LOG.md` / Opus's list (Spotify is his
+player). After a pass: replace `dist/MattsTimer.apk` in its own commit.
 
 ## 3. Follow-up seen while reading the code - not fixed, not asked for
 
