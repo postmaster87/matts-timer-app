@@ -225,3 +225,30 @@ State left: phone locked, screen on lock screen, timer at TIME for a 35 s
 set (ring ends by itself at 2 min; music focus held until RESET/RESTART).
 `dist/MattsTimer.apk` not replaced - the check has not passed.
 
+## 2026-09-20 - Phone check 1 fixes: Fable review of 40f11f2 + f3ba666 - SIGNED for phone check 2
+
+Matt's words on the two findings: "yes fix them now". Built by Opus on
+base 9b3d7fa.
+
+- `TimerService.kt` (Fable-owned) read line by line [measured, n=1 read]:
+  channel `timer_v2` at IMPORTANCE_DEFAULT, sound null, vibration off,
+  old `timer` channel deleted, FOREGROUND_SERVICE_IMMEDIATE on API 31+,
+  nothing else in the notification changed. No deviation.
+- Keyboard: number pad (TYPE_CLASS_NUMBER), check key commits and runs the
+  SET & START path (at 0:00 it only closes the keyboard), root inset
+  listener pads for the keyboard so CANCEL / SET & START stay above it,
+  `adjustResize` on the activity, every close path hides the keyboard.
+  Accepted deviations: IME_FLAG_NO_EXTRACT_UI (landscape), `@+id/root`.
+- f3ba666: Opus reported typed `5` in seconds became 50 (NumberPicker
+  prefix-matches displayedValues). Fable sent it back under "nothing broke
+  should touch my phone". Fixed with a two-digit formatter in place of
+  displayedValues; no reflection.
+- Build passes on the committed tree, APK 677,345 bytes [measured, n=1].
+  No stream volume, AlarmManager, INTERNET; permission lines untouched.
+
+Seen, not fixed: full lintRelease has 2 old `Suspicious0dp` errors on
+`lapsScroll` (lintVital is clean; the release build passes).
+
+All on-phone behavior of these fixes is [verify, n=0] until phone check 2.
+Install waits on Matt's word.
+
