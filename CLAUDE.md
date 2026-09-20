@@ -22,8 +22,8 @@ shape as matts-doc-reader and matts-calendar-app (both flipped 2026-09-18).
   and that is where you come in Fable."** The phone checks are Fable's
   (Section 3), and so is the verdict that a build works on the phone. A
   feature is not DONE until its phone check passes.
-- **Fable-owned code [PROPOSED by Fable 2026-09-20 - NOT yet accepted by
-  Matt; first item in `docs/handoff/FOR_FABLE.md`].** Everything that
+- **Fable-owned code [ACCEPTED by Matt 2026-09-20, his word: "8. accept";
+  `docs/handoff/FOR_FABLE_LOG.md`].** Everything that
   decides when the timer ends and whether he hears it: in
   `MainActivity.kt` today, the countdown state and clock math
   (`timerStart`, `timerPause`, `timerFinish`, `timerReset`, `endsAt`,
@@ -34,8 +34,7 @@ shape as matts-doc-reader and matts-calendar-app (both flipped 2026-09-18).
   fires its finish when the screen is off or the app is in the background
   (a service, an alarm, a wake lock, a notification). Fable specs, Opus
   writes, Fable reviews the diff line by line against the spec and signs
-  it in `docs/DECISIONS_LOG.md`. Until Matt accepts or edits this list it
-  is handled as Fable-owned.
+  it in `docs/DECISIONS_LOG.md`.
 - **Fable-written, no other model touches it (global Section 4 rule 4,
   security):** the `<uses-permission>` lines in `AndroidManifest.xml` and
   the `signingConfig` lines in `android/app/build.gradle.kts`, and any
@@ -98,8 +97,11 @@ in Matt's order, and moves answered items to
 ## 3. Walls that do not move, for either role
 
 - **All local.** His words, 2026-09-20: "It is all local, no internet, no
-  syncing with other apps". No `INTERNET` permission, ever. `VIBRATE` is
-  the whole permission list today [measured, 2026-09-20]; adding any
+  syncing with other apps". No `INTERNET` permission, ever. The
+  permission list is `VIBRATE` plus the four he accepted on 2026-09-20 for
+  the lock-screen timer (`FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`, `WAKE_LOCK`)
+  [measured, 2026-09-20]; adding any
   permission is a decision question to Matt first, and the manifest line
   is Fable-written. No exported component besides the launcher activity,
   no content provider, no broadcast to or from another app.
