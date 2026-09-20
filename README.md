@@ -62,7 +62,9 @@ both large buttons restart the set. **The stage flashes for exactly as long as
 the chime is repeating**: when the repeats end - on their own at two minutes, or
 because he stopped them - the flash stops with them and the screen sits still on
 red `TIME` [design]. A finished set picked back up after the process was killed
-shows that same still red `TIME`, no flash, no sound [design].
+shows that same still red `TIME`, no flash, no sound - as long as it finished
+inside the last ten minutes; past that it is dropped, see **If the app is
+killed** [design].
 
 **PAUSE on the last instant is a finish.** If the clock has already hit zero by
 the time the tap lands, the set rings like any other finish instead of freezing
@@ -97,8 +99,9 @@ still ends at two minutes. Changing voice or muting mid-ring takes effect on
 the next repeat [design]. When the two minutes run out on their own the clock
 stays on `TIME` and the music stays ducked — only RESET or RESTART hands that
 back [design]. A set that ran out while the process was dead does not ring
-when the app reopens: it is history, and it shows `TIME` without a sound
-[design]. [phone behavior verify, n=0]
+when the app reopens: it is history, and it shows `TIME` without a sound -
+if it ran out more than ten minutes ago it is not shown at all [design].
+[phone behavior verify, n=0]
 
 **It keeps running with the app closed.** Starting a countdown or the stopwatch
 starts a foreground service: the set stays alive with the app closed, the
@@ -157,6 +160,17 @@ including an open wheel picker, and without silencing a ring-out.
 **If the app is killed** — the countdown, the stopwatch and the selected preset
 are written to the phone on every change, so a restarted process picks the set
 back up where it was. A reboot clears it: the app opens fresh on 35s [design].
+
+**Ten minutes and a killed set is dropped.** His words, 2026-09-20: *"if the
+app is "killed with a timer running for more than ten minutes kill it and shut
+down the timer app."* When the process comes back, a set whose finish is more
+than ten minutes in the past is not picked up at all — no red `TIME`, no
+notification, no service, no hold on the music. The app is simply fresh: 35s,
+ready [design]. A set that is **still counting** comes back however long the
+process was dead ("If the app is closed the timer should stay running"), and one
+that ended ten minutes ago or less still comes back on a silent `TIME`
+[design]. A paused set and the stopwatch are not touched by the rule [design].
+[phone behavior verify, n=0]
 
 ## Build
 

@@ -185,6 +185,14 @@ F.append(Paragraph(
     "notifications - the timer runs either way. Every change is written to the "
     "phone, so a killed process picks the set back up; a reboot clears it and the "
     "app opens fresh on 35s.", BODY))
+F.append(Paragraph(
+    "<b>Ten minutes and a killed set is dropped.</b> If the process comes back to "
+    "a set whose finish is more than ten minutes in the past, it is not picked up "
+    "at all - no red TIME, no notification, no service, no hold on the music. The "
+    "app is simply fresh on 35s. A set that is still counting comes back however "
+    "long the process was dead, and one that ended ten minutes ago or less still "
+    "comes back on a silent TIME. A paused set and the stopwatch are not touched "
+    "by the rule.", BODY))
 
 F.append(Paragraph("Stopwatch", H2))
 F.append(Paragraph(

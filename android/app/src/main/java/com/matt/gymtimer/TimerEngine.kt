@@ -58,6 +58,14 @@ object TimerEngine {
     /** same-boot tolerance for the elapsedRealtime-vs-wall-clock offset */
     private const val BOOT_SLACK = 60_000L
 
+    /**
+     * The stale rule. His words, 2026-09-20: "if the app is "killed with a timer
+     * running for more than ten minutes kill it and shut down the timer app."
+     * A set whose finish is further than this in the past is dropped when the
+     * process comes back, instead of being restored onto a red TIME screen.
+     */
+    private const val STALE_MS = 600_000L
+
     interface Listener {
         fun onEngineState()
     }
@@ -68,6 +76,13 @@ object TimerEngine {
     var endsAt = 0L; private set
     var running = false; private set
     var finished = false; private set
+
+    /**
+     * elapsedRealtime of the finish, persisted with the rest of the state: it is
+     * what tells a restore a set that just ended from one that ended hours ago.
+     * 0 whenever the set is not finished.
+     */
+    private var finishedAt = 0L
 
     /** the repeating chime after TIME is live - cleared by any of the cue-killers */
     var alarming = false; private set
@@ -226,6 +241,7 @@ object TimerEngine {
         remainMs = 0
         finished = true
         alarmFrom = SystemClock.elapsedRealtime()
+        finishedAt = alarmFrom          // same instant; the stale rule ages from it
         alarmK = 0
         alarming = true
         alarmFire()
@@ -524,6 +540,7 @@ object TimerEngine {
             .putLong("endsAt", endsAt)
             .putLong("remainMs", remainMs)
             .putBoolean("finished", finished)
+            .putLong("finishedAt", if (finished) finishedAt else 0L)
             .putBoolean("swRunning", swRunning)
             .putLong("swBase", swBase)
             .putLong("swElapsed", swElapsed)
@@ -534,10 +551,29 @@ object TimerEngine {
     }
 
     /**
+     * The stale rule's landing state: the old set is not picked up at all. With
+     * nothing active `serviceWanted` is false, so the `changed()` at the end of
+     * init() also takes the service down - see syncService() and
+     * TimerService.onStartCommand. The process itself is left alone.
+     */
+    private fun dropSet() {
+        presetSec = DEFAULT_SEC
+        remainMs = DEFAULT_SEC * 1000L
+        running = false
+        finished = false
+        alarming = false
+    }
+
+    /**
      * Process death. The elapsedRealtime clock only means anything within one
      * boot, so the stored wall-clock/elapsed offset is the check: if it still
      * matches, the stored clock values are ours and are used; if not (a reboot),
      * the app opens fresh on 35s.
+     *
+     * Within the same boot a finished set is only picked back up while it is
+     * fresh: his words, 2026-09-20, "if the app is "killed with a timer running
+     * for more than ten minutes kill it and shut down the timer app." A set that
+     * is still counting is restored however long the process was dead.
      */
     private fun restore() {
         val p = prefs ?: return
@@ -567,16 +603,23 @@ object TimerEngine {
                     // so take the focus now - same test timerStart uses
                     if (left - DUCK_AT <= 50) focusRequest()
                 }
-                left <= 0 -> {                               // ran out while dead
+                left <= 0 && -left <= STALE_MS -> {          // ran out while dead
                     presetSec = ps; remainMs = 0
                     running = false; finished = true         // no chime: it is history
+                    finishedAt = savedEnds                   // a later restore ages it right
                 }
-                else -> {                                    // nonsense - open fresh
-                    presetSec = DEFAULT_SEC; remainMs = DEFAULT_SEC * 1000L
-                }
+                // over ten minutes past the finish, or nonsense - open fresh
+                else -> dropSet()
             }
         } else if (wasFinished) {
-            presetSec = ps; remainMs = 0; finished = true
+            val savedFin = p.getLong("finishedAt", 0L)
+            // missing, zero, or in the future is treated as stale
+            if (savedFin > 0 && savedFin <= now && now - savedFin <= STALE_MS) {
+                presetSec = ps; remainMs = 0; finished = true
+                finishedAt = savedFin
+            } else {
+                dropSet()
+            }
         } else if (savedRemain in 1 until ps * 1000L) {      // paused mid-set
             presetSec = ps; remainMs = savedRemain
         }
