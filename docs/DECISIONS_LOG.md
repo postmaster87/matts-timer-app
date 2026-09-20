@@ -252,3 +252,49 @@ Seen, not fixed: full lintRelease has 2 old `Suspicious0dp` errors on
 All on-phone behavior of these fixes is [verify, n=0] until phone check 2.
 Install waits on Matt's word.
 
+## 2026-09-20 - Phone check 2 of the f3ba666 build (Fable, adb-driven) - fixes confirmed, one item is Matt's phone setting
+
+Matt's words: "yes install it". Installed with `adb install -r` (Success).
+
+INCIDENT, Fable's fault: during this check Fable's unguarded coordinate
+taps got out of step with the app; a BACK key press left the timer and the
+following taps landed outside it. Matt, his words: "what the fuck are you
+doing opening a browser and going to the playstation store that has
+nothing to fucking do with installing a timer app" and then "finish the
+timer and only the timer - do not fucking touch anything else on my
+phone". Inputs sent in those sequences: taps (540,1418) (806,670)
+(806,1103) (757,1280) (540,2086), one BACK, END, three backspaces, text
+"12" twice. Rule from here on in this repo's phone work: every input is
+sent only after a check that `com.matt.gymtimer/.MainActivity` is the
+resumed activity, else abort; no BACK, HOME or recents keys; one action
+per step with a read between. The guarded driver was used for everything
+below.
+
+PASS [measured, n=1 each]
+- Number pad opens (not QWERTY); with it up CANCEL and SET & START sit
+  above it (button row at y=1281 of 2340).
+- Typed 5 + check key: a 0:05 set ran (ticks +2, +3, +4 s, chime +5.0 s).
+- Typed 12 + SET & START tapped above the pad: go 11:28:47.13, ticks +9,
+  +10, +11 s, chime +12.0 s. RESET returned to READY 12S.
+- Notification on channel `timer_v2`, importance 3; titles RUNNING / TIME.
+- Audio focus log: every request paired with an abandon; nothing held at
+  idle. (An earlier "focus: 1" read was a log line of the old process
+  dying at reinstall, not a held focus.)
+- No crash in logcat.
+
+NOT FIXED BY THE APP CHANGE
+- Lock screen still shows the timer only as a small icon in the top row
+  with the DEFAULT-importance channel. The app side is done; what is left
+  is his Samsung lock-screen notification style (icons vs cards) - his
+  setting, his call, its own prompt first (global Section 12 item 17).
+
+STILL HIS TO CHECK: Spotify duck depth and the chime climb in his
+headphones; lock-screen buttons once cards show; rotation with the picker
+open; typed 5 in minutes. Not tested by anyone: process-kill restore and
+the ten-minute rule; pause at 0:00.
+
+State left: phone locked on the lock screen; a 1m set was started at
+about 11:29 for the lock-screen read, so it reaches TIME and rings for up
+to 2 minutes on its own; music stays ducked until RESET/RESTART.
+`dist/MattsTimer.apk` not replaced.
+

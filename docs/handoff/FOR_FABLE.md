@@ -29,15 +29,20 @@ from recents, stopwatch too, PAUSE and RESTART on the lock screen.
 
 Built at f0071a1, reviewed and signed by Fable (`docs/DECISIONS_LOG.md`). Open: the phone check, item 2.
 
-## 2. Phone check of v2 - WAITING on Matt
+## 2. Phone check - build f3ba666 is on the phone; open items are Matt's
 
-Serial `RFGL4275NVH`, his words 2026-09-20: "Trust the serial is correct."
-Also his words: "I have another session working on my phone so don't
-interrupt it... Once that session is done you can ask me for permission to
-build and test on my phone." No adb command of any kind until he says that
-session is done; then ask permission, then install the build of e5226d2 (v2 + rising repeat chime + fix pass + ten-minute stale rule). HOLD: the Nudge session (Calendar app revision spec [3294e9]) has the phone first, Matt's words "hold on my phone that session is ready so it is going to build first"; when this session is done with the phone, send that session a handoff notice too if it still needs it and run
-the ten checks in `docs/DECISIONS_LOG.md` / Opus's list plus the six ring-out checks in the f3d3ed5 entry's Opus list (Spotify is his
-player). After a pass: replace `dist/MattsTimer.apk` in its own commit.
+Record: `docs/DECISIONS_LOG.md`, entries "Phone check 1" and "Phone check
+2" (2026-09-20). Phone rule after the incident, Matt's words: "finish the
+timer and only the timer - do not fucking touch anything else on my
+phone" - guarded inputs only (timer activity in front or abort), no BACK /
+HOME / recents keys, and ask him before any further phone session.
+
+Open: (a) lock-screen card needs his Samsung lock-screen notification
+style decision (icons vs cards) - ask with its own prompt; (b) his ears:
+Spotify duck depth, chime climb; (c) lock-screen buttons, rotation with
+picker open, typed 5 in minutes; (d) untested: kill/restore, ten-minute
+rule, pause at 0:00. After he passes it: replace `dist/MattsTimer.apk` in
+its own commit naming f3ba666.
 
 ## 3. Follow-up seen while reading the code - not fixed, not asked for
 
