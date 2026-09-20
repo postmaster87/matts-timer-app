@@ -35,7 +35,7 @@ Serial `RFGL4275NVH`, his words 2026-09-20: "Trust the serial is correct."
 Also his words: "I have another session working on my phone so don't
 interrupt it... Once that session is done you can ask me for permission to
 build and test on my phone." No adb command of any kind until he says that
-session is done; then ask permission, then install the build of f3d3ed5 (v2 + rising repeat chime) and run
+session is done; then ask permission, then install the build of 422e227 (v2 + rising repeat chime + fix pass; the other phone session reported done at 10:36) and run
 the ten checks in `docs/DECISIONS_LOG.md` / Opus's list plus the six ring-out checks in the f3d3ed5 entry's Opus list (Spotify is his
 player). After a pass: replace `dist/MattsTimer.apk` in its own commit.
 

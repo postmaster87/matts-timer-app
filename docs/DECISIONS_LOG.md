@@ -110,3 +110,34 @@ may sleep during the ring-out (the chimes do not depend on it).
 On-phone behavior [verify, n=0]. Joins the v2 phone check, still waiting
 on Matt's word that the other phone session is done.
 
+## 2026-09-20 - Fix pass before the phone: Fable review of 422e227 - SIGNED for phone check
+
+Matt's words: "change them all nothing broke should touch my phone." Fable's
+reading, said to him in chat: the three ring-out items plus the two plain
+v2 defects. Spec by Fable, built by Opus at 422e227 on base 92aa947.
+
+Code diff read line by line [measured, n=1 read]:
+
+- `alarmStop()`: only acts while `alarming`; clears cues, state stays
+  `finished`, focus stays held. Called first in `swStart()` and from the
+  new `onTab()` (user tab taps only); rotation and onCreate call
+  `setMode()` directly and do not silence the ring.
+- Flash follows `alarming`, not `finished` (`syncFlash`, one decision point).
+- keepAwake = running or swRunning or alarming, at onStart, listener and
+  rotation.
+- `timerPause()` with nothing left routes to `timerFinish()`; "paused
+  0:00" cannot occur.
+- `restore()` inside the last 3 s requests the duck; `loadSettings()` runs
+  before it.
+- Accepted deviation: a tap on the tab already showing also silences the
+  ring.
+- No stream volume, AlarmManager or INTERNET (grep: no matches). Build
+  passes on the committed tree [measured, n=1].
+
+Still open by Matt's choice: a process killed and reopened hours later in
+the same boot shows TIME for the old set.
+
+Phone: the calendar session reported at 10:36 it is done with
+RFGL4275NVH. That is a status notice; the install waits on Matt's
+permission in this chat.
+
