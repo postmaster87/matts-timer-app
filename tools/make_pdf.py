@@ -118,18 +118,28 @@ F.append(Paragraph(
 
 F.append(Paragraph("At zero", H2))
 F.append(Paragraph(
-    "Soft tick at 3, 2, 1 in the selected voice, then the finish chime. Screen goes "
-    "red and flashes; the phone vibrates. Every tone is a sine with a soft attack "
-    "and a natural decay, synthesised on the device - no buzzer, no audio files. "
-    "Cues play on the alarm stream so they carry over gym noise, and vibration "
-    "toggles separately. Both settings persist.", BODY))
+    "Soft tick at 3, 2, 1 in the selected voice, then the finish chime. The digits "
+    "go red, the line reads TIME and the phone vibrates. Every tone is a sine with a "
+    "soft attack and a natural decay, synthesised on the device - no buzzer, no "
+    "audio files. Cues play on the alarm stream so they carry over gym noise, and "
+    "vibration toggles separately. Both settings persist.", BODY))
+F.append(Paragraph(
+    "The screen <b>flashes for exactly as long as the chime is repeating</b>. When "
+    "the repeats end - on their own at two minutes, or because you stopped them - "
+    "the flash stops with them and the screen sits still on red TIME. "
+    "<b>PAUSE on the last instant is a finish:</b> if the clock has already hit zero "
+    "by the time the tap lands, the set rings like any other finish rather than "
+    "freezing at PAUSED 0:00.", BODY))
 
 F.append(Paragraph("The chime repeats, and gets louder", H2))
 F.append(Paragraph(
     "The finish chime does not ring once and give up. It <b>repeats until you stop "
-    "it</b> - RESTART, RESET, a preset, SET &amp; START, or the button on the lock "
-    "screen - and each repeat is louder than the last, so a set that ends while "
-    "you are under a bar does not go unheard.", BODY))
+    "it</b> - RESTART, RESET, a preset, SET &amp; START, the button on the lock "
+    "screen, tapping either tab, or starting the stopwatch - and each repeat is "
+    "louder than the last, so a set that ends while you are under a bar does not go "
+    "unheard. Tapping a tab or starting the stopwatch only silences it: the set "
+    "stays on TIME and the music stays ducked until RESET or RESTART. Rotating the "
+    "phone does not silence it.", BODY))
 F.append(table([
     ["The ring-out", "How it behaves"],
     ["Volume", "30% on the first chime, then 47.5, 65, 82.5, and full from the fifth on"],
@@ -155,7 +165,8 @@ F.append(Paragraph(
     "instead of fighting them, and <b>stays</b> down at TIME. It comes back up on "
     "its own the moment the set is reset or restarted - pausing hands it back too. "
     "The app never writes a volume; it only asks for the duck, which is what makes "
-    "the return gradual and leaves every other app's volume alone.", BODY))
+    "the return gradual and leaves every other app's volume alone. A set the phone "
+    "restores inside its last three seconds takes the duck as it comes back.", BODY))
 
 F.append(Paragraph("It keeps running with the app closed", H2))
 F.append(Paragraph(
@@ -179,9 +190,9 @@ F.append(Paragraph("Stopwatch", H2))
 F.append(Paragraph(
     "Second tab in the header. START / STOP, LAP while running, RESET when stopped. "
     "Laps list split and cumulative time, newest first. Hundredths resolution. The "
-    "screen stays awake while anything is counting and releases as soon as it stops; "
-    "rotating the phone rebuilds the layout without disturbing a live set, or an "
-    "open wheel picker.", BODY))
+    "screen stays awake while anything is counting - and while the chime is still "
+    "repeating - and releases as soon as that stops; rotating the phone rebuilds the "
+    "layout without disturbing a live set, or an open wheel picker.", BODY))
 
 F.append(Paragraph("Install on the phone", H2))
 F.append(Paragraph(

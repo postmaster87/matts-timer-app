@@ -120,7 +120,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
         syncPresets()
         if (mode == MODE_SW) renderLaps()
         syncFlash()
-        keepAwake(TimerEngine.running || TimerEngine.swRunning)
+        keepAwake(TimerEngine.running || TimerEngine.swRunning || TimerEngine.alarming)
         render()
         loopOn()
     }
@@ -146,7 +146,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
         syncPresets()
         if (mode == MODE_SW) renderLaps()
         syncFlash()
-        keepAwake(TimerEngine.running || TimerEngine.swRunning)
+        keepAwake(TimerEngine.running || TimerEngine.swRunning || TimerEngine.alarming)
         if (pickOpen && (TimerEngine.running || mode != MODE_TIMER)) closePicker()
         render()
         loopOn()
@@ -172,12 +172,13 @@ class MainActivity : Activity(), TimerEngine.Listener {
 
         syncPresets()
         if (mode != MODE_TIMER) renderLaps()
-        setMode(mode)
+        setMode(mode)                       // the re-render path: never alarmStop
         if (wasOpen) {
             pickOpen = true
             pickOverlay.visibility = View.VISIBLE
         }
         syncFlash()
+        keepAwake(TimerEngine.running || TimerEngine.swRunning || TimerEngine.alarming)
     }
 
     /**
@@ -241,8 +242,8 @@ class MainActivity : Activity(), TimerEngine.Listener {
         btnGo.setOnClickListener { onGo() }
         btnMid.setOnClickListener { onMid() }
         btnAlt.setOnClickListener { onAlt() }
-        tabTimer.setOnClickListener { setMode(MODE_TIMER) }
-        tabSw.setOnClickListener { setMode(MODE_SW) }
+        tabTimer.setOnClickListener { onTab(MODE_TIMER) }
+        tabSw.setOnClickListener { onTab(MODE_SW) }
         togSound.setOnClickListener { TimerEngine.cycleSound(); syncToggles() }
         togVibe.setOnClickListener { TimerEngine.toggleVibe(); syncToggles() }
 
@@ -493,6 +494,16 @@ class MainActivity : Activity(), TimerEngine.Listener {
         }
     }
 
+    /**
+     * A tab tap, as against the setMode calls that only redraw (onCreate and the
+     * rotation rebuild): his hand is on the phone, so a ring-out at TIME has
+     * been heard and stops here. Rotation must NOT silence it.
+     */
+    private fun onTab(m: String) {
+        TimerEngine.alarmStop()
+        setMode(m)
+    }
+
     private fun setMode(m: String) {
         mode = m
         if (pickOpen) closePicker()
@@ -544,8 +555,16 @@ class MainActivity : Activity(), TimerEngine.Listener {
         }
     }
 
+    /**
+     * The flash follows the ring, not the state: it runs exactly while the
+     * engine says `alarming`. When the chimes stop - the 2-minute cut, a tab
+     * tap, the stopwatch, RESET, RESTART - the flash stops with them, and a
+     * finished set that is no longer ringing sits still on red TIME. The engine
+     * is the only source of truth; this is called from the listener, onStart,
+     * setMode and the rotation rebuild, so it is right after every change.
+     */
     private fun syncFlash() {
-        val want = started && mode == MODE_TIMER && TimerEngine.finished
+        val want = started && mode == MODE_TIMER && TimerEngine.alarming
         if (want && !flashing) startFlash() else if (!want && flashing) stopFlash()
     }
 
@@ -665,6 +684,7 @@ class MainActivity : Activity(), TimerEngine.Listener {
     }
 
     // ------------------------------------------------------------- system
+    /** on while a clock is moving AND while the chime is still repeating */
     private fun keepAwake(on: Boolean) {
         if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

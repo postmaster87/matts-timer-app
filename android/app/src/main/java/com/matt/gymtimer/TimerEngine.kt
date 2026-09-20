@@ -143,8 +143,9 @@ object TimerEngine {
      * Kills every pending cue, and with them the repeat chime: the sequence is
      * one cue at a time, so this is the single place the ring-out stops.
      * `alarming` is cleared here and nowhere else, which is why timerReset,
-     * timerBack, selectPreset, setAndStart, timerStart and timerPause all end
-     * it without a line of their own.
+     * timerBack, selectPreset, setAndStart, timerStart, timerPause and
+     * alarmStop (the tab tap and the stopwatch) all end it without a line of
+     * their own.
      */
     private fun clearCues() {
         for (r in cues) h.removeCallbacks(r)
@@ -200,9 +201,19 @@ object TimerEngine {
         changed()
     }
 
+    /**
+     * PAUSE on the last instant is a finish, not a pause: a set stopped with
+     * nothing left has to ring like any other, and "paused at 0:00" is a state
+     * START refuses to leave. `paused` can therefore never hold at remainMs 0.
+     */
     fun timerPause() {
         if (!running) return
-        remainMs = (endsAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
+        val left = endsAt - SystemClock.elapsedRealtime()
+        if (left <= 0) {
+            timerFinish()
+            return
+        }
+        remainMs = left
         running = false
         clearCues()
         focusAbandon()
@@ -261,6 +272,21 @@ object TimerEngine {
         changed()
     }
 
+    /**
+     * Stop the ring-out because he has moved on - started the stopwatch, or
+     * switched tabs - without touching the set itself. In the finished state the
+     * only pending cues are the ring-out's, so clearing them IS stopping the
+     * chime; `clearCues` drops `alarming` with them.
+     *
+     * The state stays `finished` at 0:00 and the audio focus stays HELD: the
+     * music comes back on RESET / RESTART and nowhere else, unchanged.
+     */
+    fun alarmStop() {
+        if (!alarming) return
+        clearCues()
+        changed()
+    }
+
     /** RESTART: reload the selected preset AND run it - one tap between sets */
     fun timerReset() {
         clearCues()
@@ -301,6 +327,7 @@ object TimerEngine {
 
     // ------------------------------------------------------------ stopwatch
     fun swStart() {
+        alarmStop()                 // starting a set's clock silences the last one
         if (swRunning) return
         swBase = SystemClock.elapsedRealtime() - swElapsed
         swRunning = true
@@ -536,6 +563,9 @@ object TimerEngine {
                     presetSec = ps; endsAt = savedEnds; remainMs = left
                     running = true; finished = false
                     scheduleCues(left)
+                    // restored inside the last 3s: the duck cue is already past,
+                    // so take the focus now - same test timerStart uses
+                    if (left - DUCK_AT <= 50) focusRequest()
                 }
                 left <= 0 -> {                               // ran out while dead
                     presetSec = ps; remainMs = 0

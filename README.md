@@ -57,15 +57,28 @@ ready line says `TAP TO SET` as the reminder. Tapping the clock while the timer
 is running, or in the stopwatch, does nothing [design]. The keypad screen and
 the CUSTOM tile are gone.
 
-**Finish** — screen goes red and flashes, `TIME`, and both large buttons
-restart the set. The phone vibrates.
+**Finish** — the digits go red, the line reads `TIME`, the phone vibrates, and
+both large buttons restart the set. **The stage flashes for exactly as long as
+the chime is repeating**: when the repeats end - on their own at two minutes, or
+because he stopped them - the flash stops with them and the screen sits still on
+red `TIME` [design]. A finished set picked back up after the process was killed
+shows that same still red `TIME`, no flash, no sound [design].
+
+**PAUSE on the last instant is a finish.** If the clock has already hit zero by
+the time the tap lands, the set rings like any other finish instead of freezing
+at `PAUSED 0:00`, which was a state START refused to leave [design].
 
 **The chime repeats at `TIME`, and gets louder each time.** His words,
 2026-09-20: *"Can you gradually increase the timer volume once it has
 expired"*. The first chime is soft, each repeat is louder, and it keeps going
-until he taps **RESTART**, **RESET**, a preset, `SET & START`, or the
-lock-screen button — so a set that ends while he is under a bar does not go
-unheard.
+until he stops it — **RESTART**, **RESET**, a preset, `SET & START`, the
+lock-screen button, **tapping either tab, or starting the stopwatch** — so a set
+that ends while he is under a bar does not go unheard.
+
+Tapping a tab or starting the stopwatch **only silences it**: the set stays on
+`TIME`, and the music stays ducked until RESET or RESTART, exactly as it does
+when the two minutes run out on their own [design]. Rotating the phone does not
+silence it [design].
 
 | | |
 |---|---|
@@ -106,7 +119,10 @@ whether the app may post notifications; the timer runs either way [design].
 audio focus, so whatever is playing in his headphones drops under the 3-2-1
 ticks and the chime and stays down; it comes back up on its own the moment the
 set is reset or restarted [design; his words: "gently increase back to where it
-was when it resets or restrarts"]. Pausing hands it back too. The app never
+was when it resets or restrarts"]. Pausing hands it back too. A set that the
+phone restores inside its last three seconds - the process was killed and
+reopened just before zero - takes the duck as it comes back, so those last ticks
+are not the one time the music stays over them [design]. The app never
 writes a stream volume - it only asks the system to duck, which is what makes
 the return gradual and what keeps every other app's volume his [measured: no
 `setStreamVolume` or `adjustVolume` call exists in the source].
@@ -132,9 +148,11 @@ Laps show split and cumulative, newest first. A running stopwatch keeps running
 with the app closed and shows on the lock screen too; laps are not kept if the
 process is killed [design].
 
-**Screen stays awake while anything is counting**, and releases as soon as it
-stops. Rotation rebuilds the layout without disturbing a live set, including an
-open wheel picker.
+**Screen stays awake while anything is counting - and while the chime is still
+repeating** - and releases as soon as that stops, so with the app in front the
+ring-out is never cut short by the screen going to sleep [design; phone behavior
+verify, n=0]. Rotation rebuilds the layout without disturbing a live set,
+including an open wheel picker, and without silencing a ring-out.
 
 **If the app is killed** — the countdown, the stopwatch and the selected preset
 are written to the phone on every change, so a restarted process picks the set

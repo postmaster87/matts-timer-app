@@ -141,8 +141,8 @@ in Matt's order, and moves answered items to
   stands.
 - Code, all in `android/app/src/main/java/com/matt/gymtimer/`:
   `MainActivity.kt` (the screen only - layout, presets, wheel picker, laps,
-  rendering; 679 lines), `TimerEngine.kt` (the timer itself - clock math,
-  cues, ducking, persistence, the state that outlives the screen; 563
+  rendering; 699 lines), `TimerEngine.kt` (the timer itself - clock math,
+  cues, ducking, persistence, the state that outlives the screen; 593
   lines), `TimerService.kt` (foreground service, lock-screen notification,
   wake lock; 214 lines) and `Tones.kt` (synthesised cues; 232 lines)
   [measured, 2026-09-20, total lines including blanks].
