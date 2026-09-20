@@ -58,7 +58,34 @@ is running, or in the stopwatch, does nothing [design]. The keypad screen and
 the CUSTOM tile are gone.
 
 **Finish** — screen goes red and flashes, `TIME`, and both large buttons
-restart the set. A C-major chime rings twice; the phone vibrates.
+restart the set. The phone vibrates.
+
+**The chime repeats at `TIME`, and gets louder each time.** His words,
+2026-09-20: *"Can you gradually increase the timer volume once it has
+expired"*. The first chime is soft, each repeat is louder, and it keeps going
+until he taps **RESTART**, **RESET**, a preset, `SET & START`, or the
+lock-screen button — so a set that ends while he is under a bar does not go
+unheard.
+
+| | |
+|---|---|
+| Gain, chimes 1-5 | 30%, 47.5%, 65%, 82.5%, 100% — then 100% for every later one [design] |
+| Spacing | the chime's own ring-out plus a 1-second gap [design] |
+| In practice | every 4.1 s (BELL), 4.9 s (CHIME), 5.0 s (PULSE) [inferred from the rendered cue lengths, n=3 voices] |
+| It stops itself | no repeat starts more than 120 s after the finish — 30 chimes on BELL, 25 on CHIME and PULSE [inferred, n=3] |
+
+"100%" means **as loud as his alarm volume already is**. The app scales only
+its own cue; it never writes a stream volume, so nothing moves the phone's
+sliders [measured: no `setStreamVolume`, `adjustVolume` or
+`adjustStreamVolume` call exists in the source]. The buzz fires with every
+chime. MUTE silences the chimes and the buzz goes on; turning vibration off
+stops the buzz and the chimes go on; with both off the sequence is silent and
+still ends at two minutes. Changing voice or muting mid-ring takes effect on
+the next repeat [design]. When the two minutes run out on their own the clock
+stays on `TIME` and the music stays ducked — only RESET or RESTART hands that
+back [design]. A set that ran out while the process was dead does not ring
+when the app reopens: it is history, and it shows `TIME` without a sound
+[design]. [phone behavior verify, n=0]
 
 **It keeps running with the app closed.** Starting a countdown or the stopwatch
 starts a foreground service: the set stays alive with the app closed, the
@@ -68,8 +95,10 @@ notification counts down by itself (the system draws it, so nothing wakes the
 phone once a second) and carries the buttons for that state - PAUSE and RESTART
 while running, RESUME and RESTART while paused, RESTART at `TIME`, STOP for the
 stopwatch. Tapping it opens the app on the live set. A partial wake lock is
-held while the countdown runs, and for six seconds past the finish so the chime
-and the buzz complete with the screen off [design]. The service stops itself
+held while the countdown runs, and then for the whole ring-out at `TIME` — a
+130-second timeout, released the moment the repeats end — so every chime and
+buzz lands with the screen off [design; phone behavior verify, n=0]. The
+service stops itself
 the moment nothing is live. Android 13 and up asks once, on the first start,
 whether the app may post notifications; the timer runs either way [design].
 

@@ -36,6 +36,25 @@ object TimerEngine {
     /** music is ducked from this many ms before zero until RESET / RESTART */
     private const val DUCK_AT = 3000L
 
+    /**
+     * The ring-out after TIME. His words, 2026-09-20: "Can you gradually
+     * increase the timer volume once it has expired". The chime repeats until
+     * he taps RESTART / RESET / the lock-screen button, soft on the first one
+     * and full by the fifth, then full for the rest.
+     *
+     * The gain is the AudioTrack's own volume - 1.0 is whatever his alarm
+     * volume already is. No stream volume is ever written.
+     */
+    private val ALARM_GAIN = floatArrayOf(0.30f, 0.475f, 0.65f, 0.825f, 1.0f)
+
+    /** silence between the end of one chime and the start of the next */
+    private const val ALARM_GAP = 1000L
+
+    /** nothing new starts later than this past the finish */
+    private const val ALARM_MAX = 120_000L
+
+    private val ALARM_BUZZ = longArrayOf(0, 300, 120, 300, 120, 500)
+
     /** same-boot tolerance for the elapsedRealtime-vs-wall-clock offset */
     private const val BOOT_SLACK = 60_000L
 
@@ -49,6 +68,9 @@ object TimerEngine {
     var endsAt = 0L; private set
     var running = false; private set
     var finished = false; private set
+
+    /** the repeating chime after TIME is live - cleared by any of the cue-killers */
+    var alarming = false; private set
 
     var swRunning = false; private set
     var swBase = 0L; private set
@@ -117,10 +139,18 @@ object TimerEngine {
     private val cues = ArrayList<Runnable>()
     private var gen = 0
 
+    /**
+     * Kills every pending cue, and with them the repeat chime: the sequence is
+     * one cue at a time, so this is the single place the ring-out stops.
+     * `alarming` is cleared here and nowhere else, which is why timerReset,
+     * timerBack, selectPreset, setAndStart, timerStart and timerPause all end
+     * it without a line of their own.
+     */
     private fun clearCues() {
         for (r in cues) h.removeCallbacks(r)
         cues.clear()
         gen++                       // anything already dequeued is inert too
+        alarming = false
     }
 
     private fun postCue(delay: Long, action: () -> Unit) {
@@ -184,10 +214,51 @@ object TimerEngine {
         running = false
         remainMs = 0
         finished = true
-        if (sound) tones?.play(voice().chime)
-        buzzPattern(longArrayOf(0, 300, 120, 300, 120, 500))
+        alarmFrom = SystemClock.elapsedRealtime()
+        alarmK = 0
+        alarming = true
+        alarmFire()
         // focus is NOT abandoned here: the music stays down until RESET/RESTART
-        changed(justFinished = true)
+        changed()
+    }
+
+    // ------------------------------------------------------- ring-out at TIME
+    /** elapsedRealtime at the finish - the 2-minute cut is measured from it */
+    private var alarmFrom = 0L
+    private var alarmK = 0
+
+    /**
+     * One chime, then the cue for the next one. Nothing is counted: every
+     * decision is made against elapsedRealtime, so a cue the system held back
+     * cannot push the sequence past two minutes.
+     *
+     * `sound`, the voice and `vibe` are read here, at each fire - MUTE silences
+     * the chimes while the buzz goes on, VIB off stops the buzz, both off is a
+     * silent sequence that still ends on time.
+     */
+    private fun alarmFire() {
+        val v = voice()
+        if (sound) tones?.play(v.chime, ALARM_GAIN[alarmK.coerceAtMost(ALARM_GAIN.size - 1)])
+        buzzPattern(ALARM_BUZZ)
+        alarmK++
+
+        val ring = Tones.durationMs(v.chime)
+        val period = ring + ALARM_GAP
+        val nextAt = SystemClock.elapsedRealtime() - alarmFrom + period
+        if (nextAt <= ALARM_MAX) {
+            postCue(period) { alarmFire() }
+        } else {
+            // hold `alarming` until this last chime has rung out, so the wake
+            // lock is not dropped mid-tone with the screen off
+            postCue(ring) { alarmEnd() }
+        }
+    }
+
+    /** the sequence ran its two minutes: state stays `finished`, focus stays held */
+    private fun alarmEnd() {
+        if (!alarming) return
+        alarming = false
+        changed()
     }
 
     /** RESTART: reload the selected preset AND run it - one tap between sets */
@@ -379,13 +450,13 @@ object TimerEngine {
         for (i in listeners.indices.reversed()) listeners[i].onEngineState()
     }
 
-    private fun changed(justFinished: Boolean = false) {
+    private fun changed() {
         persist()
-        syncService(justFinished)
+        syncService()
         fire()
     }
 
-    private fun syncService(justFinished: Boolean) {
+    private fun syncService() {
         val c = app ?: return
         val s = service
         if (serviceWanted) {
@@ -396,7 +467,7 @@ object TimerEngine {
                     // a blocked start must never take the countdown down with it
                 }
             } else {
-                s.refresh(justFinished)
+                s.refresh()
             }
         } else {
             s?.finishUp()

@@ -164,7 +164,12 @@ class Tones {
         return out
     }
 
-    fun play(pcm: ShortArray) {
+    /**
+     * [gain] scales THIS cue only - it is the AudioTrack's own volume, never a
+     * stream volume, so 1f means "as loud as his alarm volume already is" and
+     * the phone's sliders are never written.
+     */
+    fun play(pcm: ShortArray, gain: Float = 1f) {
         if (pcm.isEmpty()) return
         try {
             val track = AudioTrack.Builder()
@@ -198,6 +203,7 @@ class Tones {
 
                     override fun onPeriodicNotification(t: AudioTrack) {}
                 })
+            track.setVolume(gain.coerceIn(0f, 1f))
             track.play()
         } catch (_: Exception) {
             // a dead audio device must never take the timer down with it
@@ -208,6 +214,9 @@ class Tones {
         /** plenty for these partials (highest is ~5.3 kHz) and a quarter the memory of 44.1k */
         private const val SR = 22050
         private const val ATTACK = 0.014
+
+        /** how long a rendered cue rings, in ms - the repeat spacing is built on it */
+        fun durationMs(pcm: ShortArray): Long = pcm.size * 1000L / SR
 
         const val C6 = 1046.50
         const val E6 = 1318.51

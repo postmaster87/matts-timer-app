@@ -48,7 +48,7 @@ class TimerService : Service() {
             ACT_RESUME -> TimerEngine.timerStart()
             ACT_RESTART -> TimerEngine.timerReset()
             ACT_SW_STOP -> TimerEngine.swStop()
-            else -> refresh(false)      // null intent = sticky restart
+            else -> refresh()           // null intent = sticky restart
         }
 
         if (!TimerEngine.serviceWanted) finishUp()
@@ -69,13 +69,13 @@ class TimerService : Service() {
 
     // ------------------------------------------------------------- engine in
     /** called by the engine on every state change while this service is alive */
-    fun refresh(justFinished: Boolean) {
+    fun refresh() {
         if (!fg) return
         try {
             nm.notify(NID, build())
         } catch (_: Exception) {
         }
-        syncWake(justFinished)
+        syncWake()
     }
 
     fun finishUp() {
@@ -101,12 +101,14 @@ class TimerService : Service() {
     // ------------------------------------------------------------ wake lock
     /**
      * A partial wake lock is what makes the finish land on time with the screen
-     * off: the cue Handler runs on uptime, which stops in deep sleep. Held only
-     * while the countdown is running, and for a few seconds past the finish so
-     * the chime and the buzz complete. The stopwatch needs none - it has no
-     * timed event and its math is elapsedRealtime.
+     * off: the cue Handler runs on uptime, which stops in deep sleep. Held while
+     * the countdown is running, and then for the whole ring-out at TIME - the
+     * chime repeats for up to two minutes and each repeat is a Handler cue, so
+     * the CPU has to stay up for all of it. The lock goes the moment the engine
+     * says the ring is over. The stopwatch needs none - it has no timed event
+     * and its math is elapsedRealtime.
      */
-    private fun syncWake(justFinished: Boolean) {
+    private fun syncWake() {
         var w = wl
         if (w == null) {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -117,7 +119,7 @@ class TimerService : Service() {
         try {
             when {
                 TimerEngine.running -> w.acquire(TimerEngine.remainingMs() + 10_000L)
-                justFinished -> w.acquire(6_000L)
+                TimerEngine.alarming -> w.acquire(130_000L)
                 else -> if (w.isHeld) w.release()
             }
         } catch (_: Exception) {

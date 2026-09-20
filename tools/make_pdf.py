@@ -118,11 +118,35 @@ F.append(Paragraph(
 
 F.append(Paragraph("At zero", H2))
 F.append(Paragraph(
-    "Soft tick at 3, 2, 1 in the selected voice, then the finish cue rung twice. "
-    "Screen goes red and flashes; the phone vibrates. Every tone is a sine with a "
-    "soft attack and a natural decay, synthesised on the device - no buzzer, no "
-    "audio files. Cues play on the alarm stream so they carry over gym noise, and "
-    "vibration toggles separately. Both settings persist.", BODY))
+    "Soft tick at 3, 2, 1 in the selected voice, then the finish chime. Screen goes "
+    "red and flashes; the phone vibrates. Every tone is a sine with a soft attack "
+    "and a natural decay, synthesised on the device - no buzzer, no audio files. "
+    "Cues play on the alarm stream so they carry over gym noise, and vibration "
+    "toggles separately. Both settings persist.", BODY))
+
+F.append(Paragraph("The chime repeats, and gets louder", H2))
+F.append(Paragraph(
+    "The finish chime does not ring once and give up. It <b>repeats until you stop "
+    "it</b> - RESTART, RESET, a preset, SET &amp; START, or the button on the lock "
+    "screen - and each repeat is louder than the last, so a set that ends while "
+    "you are under a bar does not go unheard.", BODY))
+F.append(table([
+    ["The ring-out", "How it behaves"],
+    ["Volume", "30% on the first chime, then 47.5, 65, 82.5, and full from the fifth on"],
+    ["Spacing", "the chime's own ring-out plus a one-second gap - every 4 to 5 seconds"],
+    ["It stops itself", "nothing new starts more than two minutes past the finish: "
+                        "about 30 chimes on BELL, 25 on CHIME and PULSE"],
+], [1.25 * inch, 4.85 * inch]))
+F.append(Spacer(1, 5))
+F.append(Paragraph(
+    "<b>Full means as loud as your alarm volume already is.</b> The app turns its own "
+    "cue up toward that and no further - it never writes a stream volume, so nothing "
+    "touches the phone's sliders and nothing else on the phone gets louder. The buzz "
+    "fires with every chime. On MUTE the buzz carries the sequence alone; with "
+    "vibration off the chimes carry it alone; with both off it is silent and still "
+    "ends at two minutes. Changing voice or muting mid-ring takes effect on the next "
+    "repeat. If the two minutes run out on their own the clock stays on TIME and the "
+    "music stays ducked - only RESET or RESTART hands that back.", BODY))
 
 F.append(Paragraph("The music ducks under the last three seconds", H2))
 F.append(Paragraph(
@@ -143,8 +167,9 @@ F.append(Paragraph(
     "stopwatch. Tapping the notification opens the app on the live set, and the "
     "service stops itself the moment nothing is live.", BODY))
 F.append(Paragraph(
-    "A partial wake lock is held while the countdown runs, and for six seconds past "
-    "the finish, so the chime and the buzz land on time with the screen off. "
+    "A partial wake lock is held while the countdown runs, and then for the whole "
+    "ring-out at TIME, so every repeat of the chime and the buzz lands with the "
+    "screen off; it is released the moment the repeats end. "
     "Android 13 and up asks once, on the first start, whether the app may post "
     "notifications - the timer runs either way. Every change is written to the "
     "phone, so a killed process picks the set back up; a reboot clears it and the "
