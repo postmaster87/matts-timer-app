@@ -141,3 +141,35 @@ Phone: the calendar session reported at 10:36 it is done with
 RFGL4275NVH. That is a status notice; the install waits on Matt's
 permission in this chat.
 
+## 2026-09-20 - Ten-minute stale rule: Fable review of e5226d2 - SIGNED for phone check
+
+Matt's words: "if the app is "killed with a timer running for more than ten
+minutes kill it and shut down the timer app. Yes you can install what is
+needed on my PC and Phone". Fable's reading, told to him in chat before the
+build: after the process was killed, a set that ended more than ten minutes
+ago is dropped (no TIME, no notification, no service, app fresh at 35 s);
+ended ten minutes ago or less restores to silent TIME; still counting
+keeps running; a never-killed process is unchanged. Built by Opus at
+e5226d2 on base 0d5a8b2, no deviations.
+
+Code diff read line by line [measured, n=1 read]: `STALE_MS = 600_000`;
+`finishedAt` set at the finish instant and persisted (0 when not
+finished); `restore()` drops through `dropSet()` when the end is over ten
+minutes past, or `finishedAt` is missing, zero or in the future; the
+ran-out-while-dead branch keeps `finishedAt = savedEnds`. Service
+shutdown after a drop rides the existing `serviceWanted` paths
+(`syncService`, `TimerService.onStartCommand`). No stream volume,
+AlarmManager or INTERNET. Build passes on the committed tree
+[measured, n=1].
+
+Known and accepted: a paused set restores after any gap in the same boot
+(his words name a running timer). First open after upgrading from a
+persisted `finished` state without `finishedAt` opens fresh.
+
+Phone order, Matt's words: "hold on my phone that session is ready so it
+is going to build first" - the Nudge session (Calendar app revision spec
+[3294e9], reminder-app repo) has the phone first; this session sends no
+adb command until it reports done. Install permission from Matt stands
+("Yes you can install what is needed on my PC and Phone"); confirm with
+him when the phone comes back before running it.
+
