@@ -76,3 +76,37 @@ phone so don't interrupt it. Trust the serial is correct. Once that
 session is done you can ask me for permission to build and test on my
 phone." No adb from this session until he says that session is done.
 
+## 2026-09-20 - Rising repeat chime: Fable review of f3d3ed5 - SIGNED for phone check
+
+Matt's words: "one more feature while you are waiting. Can you gradually
+increase the timer volume once it has expired". Fable asked three questions
+with recommendations (repeat until he taps; 30 percent to full by the 5th
+chime, auto-stop at 2 minutes; ramp the app's own sound only, never a
+volume slider). His answer: "thats fine build it in". Spec by Fable, built
+by Opus at f3d3ed5 on base 570fa71.
+
+Code diff read line by line [measured, n=1 read] (`TimerEngine.kt`,
+`TimerService.kt`, `Tones.kt`):
+
+- `Tones.play(pcm, gain = 1f)` sets the AudioTrack's own volume; synthesis
+  untouched; no stream volume write (grep: no matches, none for
+  AlarmManager or INTERNET either).
+- Gains 0.30, 0.475, 0.65, 0.825, 1.0 then 1.0; period = chime length +
+  1000 ms; buzz with every chime; sound, voice and vibe read at each fire.
+- One cue at a time through `postCue`; `alarming` cleared only in
+  `clearCues()`, which RESTART, RESET, preset select and SET & START all
+  reach. `timerFinish` clears first, then sets `alarming`.
+- No chime starts later than 120 s after the finish, measured on
+  `elapsedRealtime`. Accepted deviation: `alarming` is held until the last
+  chime has rung out (about 124 s worst case) so the wake lock is not
+  dropped mid-tone; the lock's own timeout is 130 s.
+- A restored `finished` state does not ring.
+- Build: `assembleRelease` passes on the committed tree [measured, n=1].
+
+Seen, not fixed: starting the stopwatch or switching tabs does not stop
+the ring-out; the red flash outlives the 2-minute audio stop; the screen
+may sleep during the ring-out (the chimes do not depend on it).
+
+On-phone behavior [verify, n=0]. Joins the v2 phone check, still waiting
+on Matt's word that the other phone session is done.
+
