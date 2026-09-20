@@ -118,6 +118,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="6dp"
+                        android:maxLines="1"
                         android:text="READY"
                         android:textColor="@color/dim"
                         android:textSize="12sp"
@@ -207,9 +208,9 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- custom length keypad -->
+    <!-- set the clock: two wheels, MIN : SEC. Flick, or tap a number and type it -->
     <LinearLayout
-        android:id="@+id/padOverlay"
+        android:id="@+id/pickOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -219,42 +220,46 @@
         android:focusable="true"
         android:fitsSystemWindows="true">
 
-        <LinearLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="SET THE CLOCK  ·  MIN : SEC"
+            android:textColor="@color/dim"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.22" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center">
+
+            <NumberPicker
+                android:id="@+id/pickMin"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/pick_wheel_h"
+                android:layout_weight="1" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="CUSTOM  ·  MIN : SEC"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:text=":"
                 android:textColor="@color/dim"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.22" />
+                android:textSize="30sp"
+                android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/padVal"
+            <NumberPicker
+                android:id="@+id/pickSec"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:text="00:00"
-                android:textColor="@color/text"
-                android:textSize="34sp"
-                android:textStyle="bold"
-                android:fontFamily="monospace" />
+                android:layout_height="@dimen/pick_wheel_h"
+                android:layout_weight="1" />
         </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/padKeys"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:layout_marginTop="6dp"
-            android:orientation="vertical" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -263,18 +268,18 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/padCancel"
+                android:id="@+id/pickCancel"
                 android:layout_width="0dp"
-                android:layout_height="@dimen/pad_btn_h"
+                android:layout_height="@dimen/pick_btn_h"
                 android:layout_weight="1"
                 android:text="CANCEL"
                 android:textSize="17sp"
                 android:textStyle="bold" />
 
             <Button
-                android:id="@+id/padSet"
+                android:id="@+id/pickSet"
                 android:layout_width="0dp"
-                android:layout_height="@dimen/pad_btn_h"
+                android:layout_height="@dimen/pick_btn_h"
                 android:layout_weight="1.4"
                 android:layout_marginStart="12dp"
                 android:text="SET &amp; START"

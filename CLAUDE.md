@@ -138,9 +138,13 @@ in Matt's order, and moves answered items to
   `docs/handoff/FOR_FABLE.md`, then `README.md` (the behavior record;
   there is no SPEC.md). `git log` is the authority for where the build
   stands.
-- Code: `android/app/src/main/java/com/matt/gymtimer/MainActivity.kt`
-  (all UI and timer logic, 777 lines) and `Tones.kt` (synthesised cues)
-  [measured, 2026-09-20].
+- Code, all in `android/app/src/main/java/com/matt/gymtimer/`:
+  `MainActivity.kt` (the screen only - layout, presets, wheel picker, laps,
+  rendering; 679 lines), `TimerEngine.kt` (the timer itself - clock math,
+  cues, ducking, persistence, the state that outlives the screen; 492
+  lines), `TimerService.kt` (foreground service, lock-screen notification,
+  wake lock; 212 lines) and `Tones.kt` (synthesised cues; 223 lines)
+  [measured, 2026-09-20, total lines including blanks].
 - Build: `android\gradlew.bat -p android assembleRelease` (JDK 17,
   compileSdk 35). Output:
   `android/app/build/outputs/apk/release/app-release.apk`.

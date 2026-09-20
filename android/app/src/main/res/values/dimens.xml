@@ -2,6 +2,7 @@
 <resources>
     <dimen name="btn_h">124dp</dimen>
     <dimen name="preset_h">58dp</dimen>
-    <dimen name="pad_btn_h">72dp</dimen>
+    <dimen name="pick_btn_h">72dp</dimen>
+    <dimen name="pick_wheel_h">260dp</dimen>
     <dimen name="digits_max">190sp</dimen>
 </resources>

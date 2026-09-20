@@ -3,6 +3,7 @@ package com.matt.gymtimer
 import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -10,15 +11,10 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -26,42 +22,32 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.NumberPicker
 import android.widget.ScrollView
 import android.widget.TextView
 import kotlin.math.ceil
 import kotlin.math.min
 
 /**
- * Gym timer. One rule drives the whole layout: RESET reloads the selected
- * preset and starts it immediately, so back-to-back sets are one tap.
+ * Gym timer - the screen. Every piece of timer state lives in [TimerEngine], so
+ * a set survives this Activity being destroyed, the app being closed and the
+ * screen going off; this class draws it and takes the taps.
  *
- * Everything runs on-device. No network, no permissions beyond vibration.
+ * One rule drives the layout: RESTART reloads the selected preset and starts it
+ * immediately, so back-to-back sets are one tap.
  */
-class MainActivity : Activity() {
-
-    // ---------------------------------------------------------------- state
-    private var presetSec = DEFAULT_SEC
-    private var customSec = 0
-    private var remainMs = DEFAULT_SEC * 1000L
-    private var endsAt = 0L
-    private var running = false
-    private var finished = false
-
-    private var swRunning = false
-    private var swBase = 0L
-    private var swElapsed = 0L
-    private val laps = ArrayList<LongArray>()   // [n, total, split], newest first
+class MainActivity : Activity(), TimerEngine.Listener {
 
     private var mode = MODE_TIMER
-    private var sound = true
-    private var soundIdx = 0
-    private var vibe = true
+    private var started = false
 
-    private var padDigits = ""
+    // picker overlay (kept across a rotation rebuild)
+    private var pickOpen = false
+    private var pickMinVal = 0
+    private var pickSecVal = 35
 
     // ---------------------------------------------------------------- views
     private lateinit var prefs: SharedPreferences
-    private lateinit var tones: Tones
     private val h = Handler(Looper.getMainLooper())
 
     private lateinit var tabs: LinearLayout
@@ -81,28 +67,18 @@ class MainActivity : Activity() {
     private lateinit var btnGo: Button
     private lateinit var btnMid: Button
     private lateinit var btnAlt: Button
-    private lateinit var padOverlay: LinearLayout
-    private lateinit var padVal: TextView
-    private lateinit var padKeys: LinearLayout
-    private lateinit var padCancel: Button
-    private lateinit var padSet: Button
+    private lateinit var pickOverlay: LinearLayout
+    private lateinit var pickMin: NumberPicker
+    private lateinit var pickSec: NumberPicker
+    private lateinit var pickCancel: Button
+    private lateinit var pickSet: Button
 
     private val presetBtns = ArrayList<Button>()
-    private lateinit var btnCustom: Button
 
     private var cBg = 0; private var cPanel = 0; private var cPanel2 = 0; private var cLine = 0
     private var cText = 0; private var cDim = 0; private var cGreen = 0; private var cAmber = 0
     private var cCyan = 0; private var cRed = 0; private var cDoneBg = 0; private var cInkGreen = 0
     private var cInkCyan = 0; private var cBarTrack = 0; private var cTogOff = 0
-
-    private val vibrator: Vibrator by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-    }
 
     // ------------------------------------------------------------ lifecycle
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,7 +86,7 @@ class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
 
         prefs = getSharedPreferences("mt", Context.MODE_PRIVATE)
-        tones = Tones()
+        TimerEngine.init(applicationContext)
 
         cBg = getColor(R.color.bg); cPanel = getColor(R.color.panel)
         cPanel2 = getColor(R.color.panel2); cLine = getColor(R.color.line)
@@ -121,51 +97,87 @@ class MainActivity : Activity() {
         cInkCyan = getColor(R.color.ink_cyan); cBarTrack = getColor(R.color.bar_track)
         cTogOff = getColor(R.color.tog_off)
 
+        // nothing live in the timer: open on 35s, whatever ran last. A set that
+        // is still running, paused or finished is picked up exactly as it stands.
+        if (!TimerEngine.timerActive) TimerEngine.selectPreset(TimerEngine.DEFAULT_SEC)
+        mode = if (!TimerEngine.timerActive && (TimerEngine.swRunning || TimerEngine.swMs() > 0))
+            MODE_SW else MODE_TIMER
+
         bind()
-        loadPrefs()
         buildPresets()
-        buildKeypad()
+        buildPicker()
         styleChrome()
 
-        // the app always opens on 35s, whatever ran last
-        presetSec = DEFAULT_SEC
-        remainMs = presetSec * 1000L
-
         syncPresets()
-        paintPad()
-        render()
+        setMode(mode)
         watchStage()
     }
 
+    override fun onStart() {
+        super.onStart()
+        started = true
+        TimerEngine.addListener(this)
+        syncPresets()
+        if (mode == MODE_SW) renderLaps()
+        syncFlash()
+        keepAwake(TimerEngine.running || TimerEngine.swRunning)
+        render()
+        loopOn()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        started = false
+        TimerEngine.removeListener(this)
+        loopOff()
+        stopFlash()
+    }
+
+    /** the engine's cues and finish are NOT cancelled here - they outlive us */
     override fun onDestroy() {
         super.onDestroy()
+        TimerEngine.removeListener(this)
         h.removeCallbacksAndMessages(null)
+    }
+
+    /** the engine calls this on every state change, however it was caused */
+    override fun onEngineState() {
+        if (!started) return
+        syncPresets()
+        if (mode == MODE_SW) renderLaps()
+        syncFlash()
+        keepAwake(TimerEngine.running || TimerEngine.swRunning)
+        if (pickOpen && (TimerEngine.running || mode != MODE_TIMER)) closePicker()
+        render()
+        loopOn()
     }
 
     /**
      * Rotation does NOT recreate the activity - a live set must survive it - so the
-     * view tree is rebuilt by hand against the new orientation's layout. Every piece
-     * of timer state lives in this instance, so nothing is lost.
+     * view tree is rebuilt by hand against the new orientation's layout. The state
+     * lives in the engine, so nothing is lost; the open picker is carried over.
      */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val padWasOpen = padOverlay.visibility == View.VISIBLE
-        h.removeCallbacks(flasher)
+        val wasOpen = pickOpen
+        stopFlash()
 
         setContentView(R.layout.activity_main)
         bind()
         buildPresets()
-        buildKeypad()
+        buildPicker()
         styleChrome()
         lastBoxH = -1
         watchStage()
 
         syncPresets()
-        paintPad()
         if (mode != MODE_TIMER) renderLaps()
         setMode(mode)
-        if (padWasOpen) padOverlay.visibility = View.VISIBLE
-        if (finished) startFlash()
+        if (wasOpen) {
+            pickOpen = true
+            pickOverlay.visibility = View.VISIBLE
+        }
+        syncFlash()
     }
 
     /**
@@ -195,8 +207,8 @@ class MainActivity : Activity() {
 
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
-        if (padOverlay.visibility == View.VISIBLE) {
-            closePad()
+        if (pickOpen) {
+            closePicker()
             return
         }
         super.onBackPressed()
@@ -220,56 +232,33 @@ class MainActivity : Activity() {
         btnGo = findViewById(R.id.btnGo)
         btnMid = findViewById(R.id.btnMid)
         btnAlt = findViewById(R.id.btnAlt)
-        padOverlay = findViewById(R.id.padOverlay)
-        padVal = findViewById(R.id.padVal)
-        padKeys = findViewById(R.id.padKeys)
-        padCancel = findViewById(R.id.padCancel)
-        padSet = findViewById(R.id.padSet)
+        pickOverlay = findViewById(R.id.pickOverlay)
+        pickMin = findViewById(R.id.pickMin)
+        pickSec = findViewById(R.id.pickSec)
+        pickCancel = findViewById(R.id.pickCancel)
+        pickSet = findViewById(R.id.pickSet)
 
         btnGo.setOnClickListener { onGo() }
         btnMid.setOnClickListener { onMid() }
         btnAlt.setOnClickListener { onAlt() }
         tabTimer.setOnClickListener { setMode(MODE_TIMER) }
         tabSw.setOnClickListener { setMode(MODE_SW) }
-        togSound.setOnClickListener {
-            when {
-                !sound -> { sound = true; soundIdx = 0 }
-                soundIdx < tones.voices.size - 1 -> soundIdx++
-                else -> sound = false
-            }
-            savePrefs(); syncToggles()
-            // cues read `sound` and the voice when they fire, so a live set needs
-            // no rescheduling - the change takes effect on the next tick
-            if (sound) tones.play(voice().preview)
-        }
-        togVibe.setOnClickListener {
-            vibe = !vibe; savePrefs(); syncToggles()
-            if (vibe) buzz(80)
-        }
-        padCancel.setOnClickListener { closePad(); buzz(20) }
-        padSet.setOnClickListener {
-            val sec = padSeconds()
+        togSound.setOnClickListener { TimerEngine.cycleSound(); syncToggles() }
+        togVibe.setOnClickListener { TimerEngine.toggleVibe(); syncToggles() }
+
+        // the clock itself is the way in to a one-off length
+        digitsBox.setOnClickListener { openPicker() }
+
+        pickCancel.setOnClickListener { closePicker(); TimerEngine.buzz(20) }
+        pickSet.setOnClickListener {
+            // commit anything typed into a wheel before reading it
+            pickMin.clearFocus(); pickSec.clearFocus()
+            val sec = pickMin.value * 60 + pickSec.value
             if (sec <= 0) return@setOnClickListener
-            customSec = sec; savePrefs()
-            closePad()
-            selectPreset(sec)
-            timerReset()          // SET & START - same one-tap intent as RESET
+            closePicker()
+            askNotif()
+            TimerEngine.setAndStart(sec)     // SET & START - the RESTART path
         }
-    }
-
-    private fun voice(): Tones.Voice =
-        tones.voices[soundIdx.coerceIn(0, tones.voices.size - 1)]
-
-    private fun loadPrefs() {
-        sound = prefs.getBoolean("sound", true)
-        soundIdx = prefs.getInt("soundIdx", 0).coerceIn(0, tones.voices.size - 1)
-        vibe = prefs.getBoolean("vibe", true)
-        customSec = prefs.getInt("customSec", 0)
-    }
-
-    private fun savePrefs() {
-        prefs.edit().putBoolean("sound", sound).putInt("soundIdx", soundIdx)
-            .putBoolean("vibe", vibe).putInt("customSec", customSec).apply()
     }
 
     // ------------------------------------------------------------- chrome
@@ -301,7 +290,7 @@ class MainActivity : Activity() {
         barTrack.background = rounded(cBarTrack, 0f)
         barFill.background = rounded(cGreen, 0f)
         barFill.pivotX = 0f
-        padOverlay.setBackgroundColor(Color.rgb(6, 9, 13))
+        pickOverlay.setBackgroundColor(Color.rgb(6, 9, 13))
         btnAlt.maxLines = 2
         btnMid.maxLines = 2
         digits.setTextColor(cText)
@@ -309,23 +298,19 @@ class MainActivity : Activity() {
     }
 
     private fun syncToggles() {
+        val sound = TimerEngine.sound
+        val vibe = TimerEngine.vibe
         styleBtn(togSound, if (sound) cPanel2 else cPanel, if (sound) cCyan else cTogOff, 12f,
             if (sound) cLine else null)
         styleBtn(togVibe, if (vibe) cPanel2 else cPanel, if (vibe) cCyan else cTogOff, 12f,
             if (vibe) cLine else null)
-        togSound.text = if (sound) voice().name else "MUTE"
+        togSound.text = TimerEngine.voiceName()
         togVibe.text = if (vibe) "VIB" else "OFF"
         togSound.textSize = 12f
         togVibe.textSize = if (vibe) 15f else 13f
     }
 
     // ------------------------------------------------------------ presets
-    private fun presetLabel(sec: Int): String = when {
-        sec < 60 -> "${sec}s"
-        sec % 60 == 0 -> "${sec / 60}m"
-        else -> "${sec / 60}m${(sec % 60).toString().padStart(2, '0')}"
-    }
-
     private fun buildPresets() {
         presetBox.removeAllViews()
         presetBtns.clear()
@@ -349,23 +334,14 @@ class MainActivity : Activity() {
                 b.textSize = 19f
                 b.setTypeface(b.typeface, android.graphics.Typeface.BOLD)
 
-                if (i < PRESETS.size) {
-                    val sec = PRESETS[i]
-                    b.text = presetLabel(sec)
-                    b.setOnClickListener {
-                        if (running) return@setOnClickListener  // never kill a live set
-                        selectPreset(sec)
-                        if (sound) tones.play(tones.pick)
-                    }
-                    presetBtns.add(b)
-                } else {
-                    btnCustom = b
-                    b.textSize = 16f
-                    b.setOnClickListener {
-                        if (running) return@setOnClickListener
-                        openPad()
-                    }
+                val sec = TimerEngine.PRESETS[i]
+                b.text = TimerEngine.presetLabel(sec)
+                b.setOnClickListener {
+                    if (TimerEngine.running) return@setOnClickListener  // never kill a live set
+                    TimerEngine.selectPreset(sec)
+                    TimerEngine.playPick()
                 }
+                presetBtns.add(b)
                 r.addView(b)
                 i++
             }
@@ -373,242 +349,77 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun selectPreset(sec: Int) {
-        clearCues()
-        presetSec = sec
-        remainMs = sec * 1000L
-        finished = false
-        running = false
-        keepAwake(false)
-        syncPresets()
-        render()
-    }
-
     private fun syncPresets() {
-        val locked = running
+        val locked = TimerEngine.running
         for (i in presetBtns.indices) {
-            val on = PRESETS[i] == presetSec
+            val on = TimerEngine.PRESETS[i] == TimerEngine.presetSec
             styleBtn(
                 presetBtns[i], if (on) cCyan else cPanel, if (on) cInkCyan else cText, 12f,
                 if (on) null else cLine
             )
             presetBtns[i].alpha = if (locked) (if (on) 0.75f else 0.34f) else 1f
         }
-        val isCustom = !PRESETS.contains(presetSec)
-        btnCustom.text = when {
-            isCustom -> presetLabel(presetSec)
-            customSec > 0 -> presetLabel(customSec) + "  EDIT"
-            else -> "CUSTOM"
-        }
-        btnCustom.textSize = if (isCustom) 19f else 14f
-        styleBtn(
-            btnCustom, if (isCustom) cCyan else cPanel, if (isCustom) cInkCyan else cText, 12f,
-            if (isCustom) null else cLine
-        )
-        btnCustom.alpha = if (locked) (if (isCustom) 0.75f else 0.34f) else 1f
     }
 
-    // ------------------------------------------------------------- keypad
-    private fun buildKeypad() {
-        padKeys.removeAllViews()
-        val rows = listOf(
-            listOf("1", "2", "3"), listOf("4", "5", "6"),
-            listOf("7", "8", "9"), listOf("CLR", "0", "DEL")
-        )
-        for ((ri, row) in rows.withIndex()) {
-            val r = LinearLayout(this)
-            r.orientation = LinearLayout.HORIZONTAL
-            val rp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
-            if (ri > 0) rp.topMargin = dp(10f).toInt()
-            r.layoutParams = rp
+    // ------------------------------------------------------------- picker
+    /**
+     * Two framework wheels, MIN : SEC. Flick them, or tap a number and type it.
+     * No keypad screen, no CUSTOM tile - the clock is the button.
+     */
+    private fun buildPicker() {
+        pickMin.minValue = 0
+        pickMin.maxValue = 99
+        pickMin.wrapSelectorWheel = true
+        pickSec.minValue = 0
+        pickSec.maxValue = 59
+        pickSec.displayedValues = SEC_LABELS
+        pickSec.wrapSelectorWheel = true
 
-            for ((ci, k) in row.withIndex()) {
-                val b = Button(this)
-                val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
-                if (ci > 0) lp.marginStart = dp(10f).toInt()
-                b.layoutParams = lp
-                val fn = k == "CLR" || k == "DEL"
-                b.text = if (k == "DEL") "DEL" else k
-                b.textSize = if (fn) 17f else 28f
-                b.setTypeface(b.typeface, android.graphics.Typeface.BOLD)
-                styleBtn(b, cPanel, if (fn) cDim else cText, 14f, cLine)
-                b.setOnClickListener {
-                    when (k) {
-                        "CLR" -> padDigits = ""
-                        "DEL" -> padDigits = padDigits.dropLast(1)
-                        else -> if (padDigits.length < 4)
-                            padDigits = (padDigits + k).trimStart('0')
-                    }
-                    if (sound) tones.play(tones.key)
-                    buzz(15)
-                    paintPad()
-                }
-                r.addView(b)
+        for (np in arrayOf(pickMin, pickSec)) {
+            np.background = rounded(cPanel, 16f)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                np.setTextColor(cText)
+                np.setTextSize(dp(30f))
+                np.selectionDividerHeight = dp(2f).toInt()
             }
-            padKeys.addView(r)
         }
-        styleBtn(padCancel, cPanel2, cText, 14f, cLine)
-        styleBtn(padSet, cCyan, cInkCyan, 14f)
+        pickMin.setOnValueChangedListener { _, _, v -> pickMinVal = v; paintPick() }
+        pickSec.setOnValueChangedListener { _, _, v -> pickSecVal = v; paintPick() }
+        pickMin.value = pickMinVal
+        pickSec.value = pickSecVal
+
+        styleBtn(pickCancel, cPanel2, cText, 14f, cLine)
+        styleBtn(pickSet, cCyan, cInkCyan, 14f)
+        paintPick()
     }
 
-    private fun padSeconds(): Int {
-        val d = padDigits.padStart(4, '0')
-        return d.substring(0, 2).toInt() * 60 + d.substring(2).toInt()
+    private fun paintPick() {
+        val ok = pickMinVal * 60 + pickSecVal > 0
+        pickSet.alpha = if (ok) 1f else 0.3f
     }
 
-    private fun paintPad() {
-        val d = padDigits.padStart(4, '0')
-        val lead = 4 - padDigits.length
-        val off = Color.rgb(0x41, 0x50, 0x5f)
-        val sb = SpannableStringBuilder()
-        for (i in 0 until 4) {
-            if (i == 2) {
-                val st = sb.length
-                sb.append(":")
-                if (lead > 2) sb.setSpan(
-                    ForegroundColorSpan(off), st, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
-            val st = sb.length
-            sb.append(d[i])
-            if (i < lead) sb.setSpan(
-                ForegroundColorSpan(off), st, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-        padVal.text = sb
-        val ok = padSeconds() > 0
-        padSet.isEnabled = ok
-        padSet.alpha = if (ok) 1f else 0.3f
+    private fun openPicker() {
+        if (mode != MODE_TIMER || TimerEngine.running) return
+        val sec = TimerEngine.presetSec
+        pickMinVal = (sec / 60).coerceIn(0, 99)
+        pickSecVal = sec % 60
+        pickMin.value = pickMinVal
+        pickSec.value = pickSecVal
+        paintPick()
+        pickOverlay.visibility = View.VISIBLE
+        pickOpen = true
+        TimerEngine.buzz(15)
     }
 
-    private fun openPad() {
-        padDigits = if (customSec > 0) {
-            ((customSec / 60).toString() + (customSec % 60).toString().padStart(2, '0'))
-                .trimStart('0').takeLast(4)
-        } else ""
-        paintPad()
-        padOverlay.visibility = View.VISIBLE
+    private fun closePicker() {
+        pickOverlay.visibility = View.GONE
+        pickOpen = false
     }
 
-    private fun closePad() {
-        padOverlay.visibility = View.GONE
-    }
-
-    // -------------------------------------------------------------- timer
-    private val cues = ArrayList<Runnable>()
-
-    private fun clearCues() {
-        for (r in cues) h.removeCallbacks(r)
-        cues.clear()
-    }
-
-    private fun postCue(delay: Long, action: () -> Unit) {
-        val r = Runnable { action() }
-        cues.add(r)
-        h.postDelayed(r, delay)
-    }
-
-    private fun scheduleCues(msLeft: Long) {
-        for (n in 3 downTo 1) {
-            val d = msLeft - n * 1000L
-            if (d > 50) postCue(d) { if (sound) tones.play(voice().tick) }
-        }
-        postCue(msLeft) { timerFinish() }
-    }
-
-    private fun timerStart() {
-        if (remainMs <= 0) return
-        endsAt = SystemClock.elapsedRealtime() + remainMs
-        running = true
-        finished = false
-        clearCues()
-        scheduleCues(remainMs)
-        if (sound) tones.play(voice().go)
-        buzz(60)
-        keepAwake(true)
-        syncPresets()
-        loopOn()
-        render()
-    }
-
-    private fun timerPause() {
-        if (!running) return
-        remainMs = (endsAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
-        running = false
-        clearCues()
-        loopOff()
-        keepAwake(false)
-        syncPresets()
-        render()
-    }
-
-    private fun timerFinish() {
-        clearCues()
-        loopOff()
-        running = false
-        remainMs = 0
-        finished = true
-        if (sound) tones.play(voice().chime)
-        buzzPattern(longArrayOf(0, 300, 120, 300, 120, 500))
-        keepAwake(false)
-        syncPresets()
-        render()
-        startFlash()
-    }
-
-    /** RESET reloads the selected preset AND starts it - back-to-back sets, one tap */
-    private fun timerReset() {
-        clearCues()
-        stopFlash()
-        remainMs = presetSec * 1000L
-        finished = false
-        running = false
-        timerStart()
-    }
-
-    // ---------------------------------------------------------- stopwatch
-    private fun swStart() {
-        swBase = SystemClock.elapsedRealtime() - swElapsed
-        swRunning = true
-        if (sound) tones.play(voice().go)
-        buzz(50)
-        keepAwake(true)
-        loopOn()
-        render()
-    }
-
-    private fun swStop() {
-        swElapsed = SystemClock.elapsedRealtime() - swBase
-        swRunning = false
-        loopOff()
-        if (sound) tones.play(tones.stop)
-        buzz(40)
-        keepAwake(false)
-        render()
-    }
-
-    private fun swReset() {
-        loopOff()
-        swRunning = false
-        swElapsed = 0
-        laps.clear()
-        keepAwake(false)
-        renderLaps()
-        render()
-    }
-
-    private fun swLap() {
-        val t = if (swRunning) SystemClock.elapsedRealtime() - swBase else swElapsed
-        val prev = if (laps.isEmpty()) 0L else laps[0][1]
-        laps.add(0, longArrayOf((laps.size + 1).toLong(), t, t - prev))
-        if (sound) tones.play(tones.lap)
-        buzz(30)
-        renderLaps()
-    }
-
+    // ---------------------------------------------------------------- laps
     private fun renderLaps() {
         lapsBox.removeAllViews()
-        for (l in laps) {
+        for (l in TimerEngine.laps) {
             val row = LinearLayout(this)
             row.orientation = LinearLayout.HORIZONTAL
             row.setPadding(dp(12f).toInt(), dp(7f).toInt(), dp(12f).toInt(), dp(7f).toInt())
@@ -630,7 +441,7 @@ class MainActivity : Activity() {
             lapsBox.addView(row)
         }
         val lp = lapsScroll.layoutParams as LinearLayout.LayoutParams
-        if (laps.isEmpty()) {
+        if (TimerEngine.laps.isEmpty()) {
             lapsScroll.visibility = View.GONE
             lp.weight = 0f
         } else {
@@ -644,68 +455,75 @@ class MainActivity : Activity() {
     private fun onGo() {
         if (mode == MODE_TIMER) {
             when {
-                finished -> timerReset()
-                running -> timerPause()
-                else -> timerStart()
+                TimerEngine.finished -> { TimerEngine.timerReset(); askNotif() }
+                TimerEngine.running -> TimerEngine.timerPause()
+                else -> { TimerEngine.timerStart(); askNotif() }
             }
         } else {
-            if (swRunning) swStop() else swStart()
+            if (TimerEngine.swRunning) TimerEngine.swStop()
+            else { TimerEngine.swStart(); askNotif() }
         }
     }
 
     /** middle button: back to the original time, stopped - never starts anything */
     private fun onMid() {
-        if (mode == MODE_TIMER) timerBack() else swReset()
-    }
-
-    private fun timerBack() {
-        clearCues()
-        loopOff()
-        stopFlash()
-        remainMs = presetSec * 1000L
-        running = false
-        finished = false
-        keepAwake(false)
-        syncPresets()
-        render()
+        if (mode == MODE_TIMER) TimerEngine.timerBack() else TimerEngine.swReset()
     }
 
     private fun onAlt() {
-        if (mode == MODE_TIMER) timerReset()
-        else if (swRunning) swLap()
+        if (mode == MODE_TIMER) { TimerEngine.timerReset(); askNotif() }
+        else if (TimerEngine.swRunning) TimerEngine.swLap()
+    }
+
+    /**
+     * Android 13+ wants to be asked before an app may post a notification, and
+     * the lock-screen timer is a notification. Asked once, on the first start;
+     * the timer runs either way.
+     */
+    private fun askNotif() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (prefs.getBoolean("askedNotif", false)) return
+        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED
+        ) return
+        prefs.edit().putBoolean("askedNotif", true).apply()
+        try {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 7)
+        } catch (_: Exception) {
+        }
     }
 
     private fun setMode(m: String) {
         mode = m
+        if (pickOpen) closePicker()
         presetBox.visibility = if (m == MODE_TIMER) View.VISIBLE else View.GONE
         barTrack.visibility = if (m == MODE_TIMER) View.VISIBLE else View.GONE
         if (m == MODE_TIMER) {
             lapsScroll.visibility = View.GONE
         } else {
-            stopFlash()
             renderLaps()
         }
-        loopOn()
+        syncFlash()
         render()
+        loopOn()
     }
 
     // -------------------------------------------------------------- clock
     private var ticking = false
 
+    /** redraw only - the finish is the engine's call, never this loop's */
     private val tick = object : Runnable {
         override fun run() {
             ticking = false
-            if (running && SystemClock.elapsedRealtime() >= endsAt) {
-                timerFinish(); return
-            }
-            if (!running && !swRunning) return
+            if (!started || !(TimerEngine.running || TimerEngine.swRunning)) return
             render()
             loopOn()
         }
     }
 
     private fun loopOn() {
-        if (ticking || !(running || swRunning)) return
+        if (ticking || !started) return
+        if (!(TimerEngine.running || TimerEngine.swRunning)) return
         ticking = true
         h.postDelayed(tick, if (mode == MODE_SW) 40L else 100L)
     }
@@ -716,6 +534,7 @@ class MainActivity : Activity() {
     }
 
     // -------------------------------------------------------------- flash
+    private var flashing = false
     private var flashOn = false
     private val flasher = object : Runnable {
         override fun run() {
@@ -725,22 +544,24 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun syncFlash() {
+        val want = started && mode == MODE_TIMER && TimerEngine.finished
+        if (want && !flashing) startFlash() else if (!want && flashing) stopFlash()
+    }
+
     private fun startFlash() {
-        stopFlash(); flashOn = false; h.post(flasher)
+        h.removeCallbacks(flasher)
+        flashing = true; flashOn = false
+        h.post(flasher)
     }
 
     private fun stopFlash() {
         h.removeCallbacks(flasher)
+        flashing = false
         stage.background = rounded(cPanel, 18f)
     }
 
     // ------------------------------------------------------------- render
-    private fun fmtClock(secIn: Long): String {
-        val sec = secIn.coerceAtLeast(0)
-        val hh = sec / 3600; val mm = sec % 3600 / 60; val ss = sec % 60
-        return if (hh > 0) "$hh:${pad2(mm)}:${pad2(ss)}" else "$mm:${pad2(ss)}"
-    }
-
     private fun fmtSw(msIn: Long): String {
         val ms = msIn.coerceAtLeast(0)
         val hh = ms / 3600000; val mm = ms % 3600000 / 60000
@@ -767,14 +588,17 @@ class MainActivity : Activity() {
             if (mode == MODE_SW) cText else cDim, 9f, if (mode == MODE_SW) cLine else null)
 
         if (mode == MODE_TIMER) {
-            val ms = if (running) (endsAt - SystemClock.elapsedRealtime()).coerceAtLeast(0) else remainMs
-            digits.text = fmtClock(ceil(ms / 1000.0).toLong())
+            val presetSec = TimerEngine.presetSec
+            val running = TimerEngine.running
+            val finished = TimerEngine.finished
+            val ms = TimerEngine.remainingMs()
+            digits.text = TimerEngine.fmtClock(ceil(ms / 1000.0).toLong())
 
             val frac = if (presetSec > 0) min(1.0, ms.toDouble() / (presetSec * 1000.0)) else 0.0
             barFill.scaleX = frac.toFloat().coerceAtLeast(0f)
 
             val warn = running && ms <= 10000
-            val paused = !running && !finished && ms < presetSec * 1000L
+            val paused = TimerEngine.paused
 
             val accent = when {
                 finished -> cRed
@@ -791,12 +615,13 @@ class MainActivity : Activity() {
                 }, 0f
             )
 
+            val label = TimerEngine.presetLabel(presetSec).uppercase()
             stageLabel.text = when {
                 finished -> "TIME"
                 warn -> "FINISH IT"
                 running -> "RUNNING"
                 paused -> "PAUSED"
-                else -> "READY  ·  " + presetLabel(presetSec).uppercase()
+                else -> "READY  ·  $label  ·  TAP TO SET"
             }
 
             btnGo.text = when {
@@ -807,7 +632,7 @@ class MainActivity : Activity() {
             }
             styleBtn(btnGo, if (running) cAmber else cGreen, cInkGreen, 16f)
 
-            btnMid.text = twoLine("RESET", "BACK TO " + presetLabel(presetSec).uppercase(), cDim)
+            btnMid.text = twoLine("RESET", "BACK TO $label", cDim)
             styleBtn(btnMid, cPanel2, cText, 16f, cLine)
             btnMid.isEnabled = true
             btnMid.alpha = 1f
@@ -817,7 +642,8 @@ class MainActivity : Activity() {
             btnAlt.isEnabled = true
             btnAlt.alpha = 1f
         } else {
-            val e = if (swRunning) SystemClock.elapsedRealtime() - swBase else swElapsed
+            val swRunning = TimerEngine.swRunning
+            val e = TimerEngine.swMs()
             digits.text = fmtSw(e)
             digits.setTextColor(if (swRunning) cText else if (e > 0) cDim else cText)
             stageLabel.text = if (swRunning) "RUNNING" else if (e > 0) "STOPPED" else "STOPWATCH"
@@ -827,7 +653,7 @@ class MainActivity : Activity() {
 
             btnMid.text = "RESET"
             styleBtn(btnMid, cPanel2, cText, 16f, cLine)
-            val canReset = e > 0 || laps.isNotEmpty()
+            val canReset = e > 0 || TimerEngine.laps.isNotEmpty()
             btnMid.isEnabled = canReset
             btnMid.alpha = if (canReset) 1f else 0.35f
 
@@ -844,27 +670,10 @@ class MainActivity : Activity() {
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    private fun buzz(ms: Long) {
-        if (!vibe) return
-        try {
-            vibrator.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
-        } catch (_: Exception) {
-        }
-    }
-
-    private fun buzzPattern(pattern: LongArray) {
-        if (!vibe) return
-        try {
-            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
-        } catch (_: Exception) {
-        }
-    }
-
     companion object {
-        private val PRESETS = intArrayOf(35, 45, 60, 300, 600, 1200, 1800, 3600)
-        private const val DEFAULT_SEC = 35
         private const val MODE_TIMER = "timer"
         private const val MODE_SW = "stopwatch"
         private val SUB_ON_CYAN = Color.argb(190, 4, 32, 46)
+        private val SEC_LABELS = Array(60) { it.toString().padStart(2, '0') }
     }
 }

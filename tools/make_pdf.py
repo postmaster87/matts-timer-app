@@ -53,16 +53,20 @@ def table(rows, widths):
 F = []
 F.append(Paragraph("Matt's Timer", H1))
 F.append(Paragraph(
-    "Native Android app. Countdown timer + stopwatch, built for back-to-back sets. "
-    "Installs from dist/MattsTimer.apk - 664 KB, no dependencies.", SUB))
+    "Native Android app. Countdown timer + stopwatch, built for back-to-back sets, "
+    "and it keeps running with the app closed. Installs from dist/MattsTimer.apk - "
+    "under 700 KB, no dependencies.", SUB))
 
 F.append(Paragraph("It cannot use the internet", H2))
 F.append(Paragraph(
-    "The app declares exactly one permission: VIBRATE. There is no INTERNET "
-    "permission in the manifest, so the phone will not let it reach the network "
-    "under any circumstances. Nothing loads, nothing syncs, nothing needs signal. "
-    "The chimes are synthesised on the device at startup rather than shipped as "
-    "audio files.", BODY))
+    "There is no INTERNET permission in the manifest, so the phone will not let "
+    "it reach the network under any circumstances. Nothing loads, nothing syncs, "
+    "nothing needs signal. The chimes are synthesised on the device at startup "
+    "rather than shipped as audio files.", BODY))
+F.append(Paragraph(
+    "The five permissions it does declare are all local to the phone: VIBRATE, "
+    "and - so a set keeps running with the app closed - FOREGROUND_SERVICE, "
+    "FOREGROUND_SERVICE_SPECIAL_USE, POST_NOTIFICATIONS and WAKE_LOCK.", BODY))
 
 F.append(Paragraph("The one rule that drives the layout", H2))
 F.append(Paragraph(
@@ -72,19 +76,23 @@ F.append(Paragraph(
 
 F.append(Paragraph("Presets", H2))
 F.append(Paragraph(
-    "<b>35s &nbsp; 45s &nbsp; 1m &nbsp; 5m &nbsp; 10m &nbsp; 20m &nbsp; 30m &nbsp; 60m</b>, "
-    "plus CUSTOM. 60 seconds and 1 minute collapsed into one tile.", BODY))
+    "<b>35s &nbsp; 45s &nbsp; 1m &nbsp; 5m &nbsp; 10m &nbsp; 15m &nbsp; 20m &nbsp; "
+    "30m &nbsp; 60m</b> - nine tiles, three by three.", BODY))
 F.append(Paragraph(
-    "The app <b>always launches on 35s</b>, regardless of what ran last. "
+    "The app <b>always launches on 35s</b>, regardless of what ran last - unless a "
+    "set is still running, paused or finished, in which case it opens on that set. "
     "Presets go dim and inert while the timer is running, so a stray tap mid-set "
     "cannot wipe a live timer - pause or let it finish to change duration.", BODY))
 
-F.append(Paragraph("Custom lengths", H2))
+F.append(Paragraph("Tap the clock for a one-off time", H2))
 F.append(Paragraph(
-    "CUSTOM opens a full-screen keypad. Digits shift in from the right as MM:SS - "
-    "tap 2, 3, 0 for 2:30. SET &amp; START applies it and starts it in one tap. "
-    "The last custom value stays on the tile for one-tap recall, but it is never "
-    "auto-selected at launch.", BODY))
+    "With the timer stopped - ready, paused or finished - <b>tap the digits</b> and "
+    "two wheels come up, minutes and seconds. Flick them, or tap a number and type "
+    "it. SET &amp; START applies the value and starts it in one tap, the same path "
+    "RESTART takes; RESET and RESTART then come back to that value until a preset "
+    "is tapped. CANCEL or the back button closes it, and the ready line reads "
+    "TAP TO SET as the reminder. Tapping the clock while it is running, or in the "
+    "stopwatch, does nothing.", BODY))
 
 F.append(Paragraph("The three buttons", H2))
 F.append(table([
@@ -116,12 +124,39 @@ F.append(Paragraph(
     "audio files. Cues play on the alarm stream so they carry over gym noise, and "
     "vibration toggles separately. Both settings persist.", BODY))
 
+F.append(Paragraph("The music ducks under the last three seconds", H2))
+F.append(Paragraph(
+    "Three seconds out the app asks the system for transient audio focus, so "
+    "whatever is playing in the headphones drops under the 3-2-1 and the chime "
+    "instead of fighting them, and <b>stays</b> down at TIME. It comes back up on "
+    "its own the moment the set is reset or restarted - pausing hands it back too. "
+    "The app never writes a volume; it only asks for the duck, which is what makes "
+    "the return gradual and leaves every other app's volume alone.", BODY))
+
+F.append(Paragraph("It keeps running with the app closed", H2))
+F.append(Paragraph(
+    "Starting a countdown - or the stopwatch - starts a foreground service, so the "
+    "set survives leaving the app, the screen going off, and swiping the app out of "
+    "recents. It sits on the lock screen as an ongoing notification that counts "
+    "itself down, with the buttons for whatever state it is in: PAUSE and RESTART "
+    "while running, RESUME and RESTART while paused, RESTART at TIME, STOP for the "
+    "stopwatch. Tapping the notification opens the app on the live set, and the "
+    "service stops itself the moment nothing is live.", BODY))
+F.append(Paragraph(
+    "A partial wake lock is held while the countdown runs, and for six seconds past "
+    "the finish, so the chime and the buzz land on time with the screen off. "
+    "Android 13 and up asks once, on the first start, whether the app may post "
+    "notifications - the timer runs either way. Every change is written to the "
+    "phone, so a killed process picks the set back up; a reboot clears it and the "
+    "app opens fresh on 35s.", BODY))
+
 F.append(Paragraph("Stopwatch", H2))
 F.append(Paragraph(
     "Second tab in the header. START / STOP, LAP while running, RESET when stopped. "
     "Laps list split and cumulative time, newest first. Hundredths resolution. The "
     "screen stays awake while anything is counting and releases as soon as it stops; "
-    "rotating the phone rebuilds the layout without disturbing a live set.", BODY))
+    "rotating the phone rebuilds the layout without disturbing a live set, or an "
+    "open wheel picker.", BODY))
 
 F.append(Paragraph("Install on the phone", H2))
 F.append(Paragraph(
