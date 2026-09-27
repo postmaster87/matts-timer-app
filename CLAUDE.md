@@ -33,7 +33,9 @@ shape as matts-doc-reader and matts-calendar-app (both flipped 2026-09-18).
   math (`swStart`, `swStop`, `swLap`, `swBase`, `swElapsed`), and
   `keepAwake`; plus anything added later that keeps a timer alive or
   fires its finish when the screen is off or the app is in the background
-  (a service, an alarm, a wake lock, a notification). Fable specs, Opus
+  (a service, an alarm, a wake lock, a notification). Under that last
+  clause, since 2026-09-27: `AlarmEngine.kt`, `AlarmService.kt` and
+  `AlarmReceiver.kt` (`docs/ALARM_SPEC.md`). Fable specs, Opus
   writes, Fable reviews the diff line by line against the spec and signs
   it in `docs/DECISIONS_LOG.md`.
 - **Fable-written, no other model touches it (global Section 4 rule 4,
@@ -102,7 +104,11 @@ in Matt's order, and moves answered items to
   permission list is `VIBRATE` plus the four he accepted on 2026-09-20 for
   the lock-screen timer (`FOREGROUND_SERVICE`,
   `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`, `WAKE_LOCK`)
-  [measured, 2026-09-20]; adding any
+  [measured, 2026-09-20] and the three he accepted on 2026-09-27 for the
+  alarm clock (`USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`,
+  `USE_FULL_SCREEN_INTENT`; his answers "8. yes", "9. A", "10. B",
+  `docs/ALARM_SPEC.md`). The alarm's receiver hears Android's own boot,
+  time and time-zone broadcasts and is not exported; adding any
   permission is a decision question to Matt first, and the manifest line
   is Fable-written. No exported component besides the launcher activity,
   no content provider, no broadcast to or from another app.

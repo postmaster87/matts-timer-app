@@ -29,7 +29,25 @@ from recents, stopwatch too, PAUSE and RESTART on the lock screen.
 
 Built at f0071a1, reviewed and signed by Fable (`docs/DECISIONS_LOG.md`). Open: the phone check, item 2.
 
-## 2. Phone check - build f3ba666 is on the phone; open items are Matt's
+## 4. Alarm clock - spec written, spawned to Opus 2026-09-27
+
+Matt's words, 2026-09-27: "Okay lets add in an alarm clock feature next".
+His answers to Fable's twelve questions, his words: "1. yes, 2. B, 3. B, 4.
+12 hour, 5 A, 6. ignores mute but I need more sound options in needs to be
+something that can wake but not annoy me, 7. 15 minutes, 8. yes, 9. A, 10.
+B, 11. If it is verification testing just close it, 12. effort is high"
+
+Decoded, with the questions as asked, and Fable's seven design calls
+(D1-D7, his to overturn): `docs/ALARM_SPEC.md`. Permission lines
+`USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `USE_FULL_SCREEN_INTENT`
+written by Fable. Open: Opus build, Fable review, phone checks on his word.
+
+## 2. Phone check - CLOSED by Matt 2026-09-27
+
+His words, asked whether to close the open checks on f3ba666 before the
+alarm build: "If it is verification testing just close it". The items below
+were not run [verify, n=0]; they are closed on his word, not passed.
+`dist/MattsTimer.apk` is still the pre-v2 build.
 
 Record: `docs/DECISIONS_LOG.md`, entries "Phone check 1" and "Phone check
 2" (2026-09-20). Phone rule after the incident, Matt's words: "finish the
