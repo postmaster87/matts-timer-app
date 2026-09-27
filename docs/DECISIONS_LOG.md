@@ -369,3 +369,46 @@ full-screen needs a manual grant, and Samsung's battery settings letting
 the alarm through. Not DONE until the phone check passes. Install waits on
 Matt's word.
 
+## 2026-09-27 - D1-D7 accepted; two adds: Fable review of 933ef88 - SIGNED; installed, not checked
+
+Matt's words: "1. yes install it, 2. accept, 3. build both but there is a
+golf tracker session that will be building on my phone in a little bit.
+Talk to it and you can have the phone while it is working". "2. accept" is
+his answer on D1-D7 (`docs/ALARM_SPEC.md` Section 2). "3. build both" is
+the missed card opening on the ALARM tab and a confirm step on DELETE.
+Then, asked how to fit the install around his leaving with the phone: "2.
+serial is correct, install now check later".
+
+Built by Opus at 933ef88 on base e958d1a. Diff read line by line
+[measured, n=1 read]:
+
+- `AlarmEngine.kt`: `EXTRA_TAB` / `TAB_ALARM` constants; the extra on the
+  `show` intent in `arm()` and on the `open` intent in `postMissed()`;
+  both PendingIntents `FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE`; request
+  codes unchanged. Nothing else in the file. No departure.
+- `MainActivity.kt`: `onNewIntent` and `onCreate` switch through
+  `setMode`, never `onTab`, so a timer ring-out is not silenced; the extra
+  is removed after one use. DELETE arms on the first tap
+  (`TAP AGAIN TO DELETE`, red, 4000 ms) and disarms on the timeout and on
+  every other editor action.
+- Accepted departures: the tab is forced only when `savedInstanceState`
+  is null; the armed button's text is 12 sp so it fits.
+- Manifest and gradle files: no diff. Build passes on the committed tree,
+  APK 703,689 bytes, SHA-256 5C7D513B...9FA2D3 [measured, n=1].
+
+Phone, shared with the golf-tracker session "Yesterday's field trial
+data" by message (it was not on the phone; handshake agreed; released to
+it afterwards). `adb -s RFGL4275NVH install -r` of that APK: Success
+[measured, n=1]. Read back, read-only:
+
+- `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `USE_FULL_SCREEN_INTENT`
+  granted=true; `POST_NOTIFICATIONS` granted=true (USER_SET, from
+  2026-09-20).
+- appops `USE_FULL_SCREEN_INTENT`: no operations recorded, default mode.
+  Whether the full-screen takeover works is still [verify, n=0].
+- `dumpsys alarm`: nothing for `com.matt.gymtimer`. No alarm is set.
+
+Not done from this session: the app was not launched, no input was sent,
+no setting was changed. Every alarm behavior on the phone is
+[verify, n=0]. `dist/MattsTimer.apk` not replaced. Not pushed.
+

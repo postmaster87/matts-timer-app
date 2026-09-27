@@ -43,7 +43,11 @@ Decoded, with the questions as asked, and Fable's seven design calls
 written by Fable. Built at ccca359, fix at 6544c8b, reviewed and signed by
 Fable (`docs/DECISIONS_LOG.md`, 2026-09-27). Open: the phone check, on his
 word (list in `docs/ALARM_SPEC.md` Section 12); his ears on the four wake
-voices and the ramp; his word on D1-D7.
+voices and the ramp. D1-D7 accepted by him 2026-09-27 ("2. accept"). Two
+adds ("3. build both") built at 933ef88, signed, and that build installed
+on RFGL4275NVH 2026-09-27 on his word ("install now check later"); no
+alarm set, nothing checked. Ask him before the check session; the phone
+is shared with the golf-tracker session by message first.
 
 ## 2. Phone check - CLOSED by Matt 2026-09-27
 
