@@ -246,6 +246,10 @@ F.append(Paragraph(
     "check key only puts the number in; it does not save. After SAVE a line reads "
     "RINGS IN 7H 12M for six seconds.", BODY))
 F.append(Paragraph(
+    "<b>DELETE asks once.</b> The first tap turns it red and reads TAP AGAIN TO DELETE; "
+    "a second tap within 4 seconds deletes. After 4 seconds, any other tap in the "
+    "editor, back, or turning the phone, it goes back to plain DELETE. No dialog.", BODY))
+F.append(Paragraph(
     "<b>When it rings</b> - app closed, screen off, phone locked - it takes the full "
     "screen: ALARM, the time, and one wide STOP. STOP is on the notification too. No "
     "snooze. A one-shot alarm switches itself off; a repeating one moves on to its next "
@@ -275,6 +279,11 @@ F.append(Paragraph(
     "before the phone is unlocked. An alarm whose time passed while the phone was off "
     "rings when the phone comes back if that was 15 minutes ago or less; longer ago it "
     "leaves a MISSED ALARM card instead.", BODY))
+F.append(Paragraph(
+    "<b>The MISSED ALARM card and the status-bar alarm icon open the app on the ALARM "
+    "tab.</b> That does not silence a timer ring-out - only a tab tap does - and it "
+    "happens once: turning the phone or coming back later leaves the tab where it is. "
+    "The timer's lock-screen notification still opens on the live set.", BODY))
 
 F.append(Paragraph("Install on the phone", H2))
 F.append(Paragraph(

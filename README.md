@@ -230,6 +230,13 @@ closes it; rotation keeps it. After SAVE a line reads `RINGS IN 7H 12M` for
 six seconds, and the first save asks for notifications if nothing has asked
 yet [design]. Up to 20 alarms; the cap is not shown (D7).
 
+**`DELETE` asks once** (his words, 2026-09-27: *"3. build both"*). The first
+tap does not delete: the button turns red and reads `TAP AGAIN TO DELETE`. A
+second tap within 4 seconds deletes and closes the editor. After 4 seconds, or
+on any other action in the editor - a wheel, `AM` / `PM`, a day, `CANCEL`,
+`SAVE`, back - it goes back to plain `DELETE`. Rotation puts it back to plain
+`DELETE` too. No dialog [design; verify, n=0].
+
 **When it rings** - with the app closed and the screen off, and on a locked
 phone over the lock screen as a full screen: `ALARM`, the time, one `STOP`
 button across the width (his answer 10) [design; verify, n=0]. STOP is on the
@@ -275,6 +282,13 @@ small store the phone can read before the first unlock [design; verify, n=0].
 An alarm whose time passed while the phone was off rings as soon as the phone
 is back up if that was 15 minutes ago or less; longer ago, it does not ring and
 leaves a `MISSED ALARM` card [design; verify, n=0].
+
+**The `MISSED ALARM` card and the status-bar alarm icon open the app on the
+`ALARM` tab** (same answer, *"3. build both"*). Opening it that way does not
+silence a timer ring-out - only a tab tap does. It forces the tab once: turning
+the phone or coming back to the app later leaves the tab where it is. The
+timer's own lock-screen notification still opens on the live set
+[design; verify, n=0].
 
 **Screen stays awake while anything is counting - and while the chime is still
 repeating** - and releases as soon as that stops, so with the app in front the

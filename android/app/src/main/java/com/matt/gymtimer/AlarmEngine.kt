@@ -27,6 +27,8 @@ object AlarmEngine {
 
     const val ACT_FIRE = "com.matt.gymtimer.ALARM_FIRE"
     const val ACT_STOP = "com.matt.gymtimer.ALARM_STOP"
+    const val EXTRA_TAB = "tab"
+    const val TAB_ALARM = "alarm"
 
     /** D7: the list is capped in code; the cap is never shown */
     const val MAX_ALARMS = 20
@@ -160,7 +162,9 @@ object AlarmEngine {
         val c = app ?: return
         val am = c.getSystemService(AlarmManager::class.java) ?: return
         val show = PendingIntent.getActivity(
-            c, 100000 + a.id, Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE
+            c, 100000 + a.id,
+            Intent(c, MainActivity::class.java).putExtra(EXTRA_TAB, TAB_ALARM),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         try {
             am.setAlarmClock(AlarmManager.AlarmClockInfo(a.next, show), fireOp(c, a.id))
@@ -369,6 +373,7 @@ object AlarmEngine {
         AlarmService.channels(c)
         val open = Intent(c, MainActivity::class.java)
             .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            .putExtra(EXTRA_TAB, TAB_ALARM)
         val n = Notification.Builder(c, AlarmService.CH_MISSED)
             .setSmallIcon(R.drawable.ic_stat_timer)
             .setContentTitle("MISSED ALARM")
@@ -377,7 +382,10 @@ object AlarmEngine {
             .setAutoCancel(true)
             .setCategory(Notification.CATEGORY_ALARM)
             .setContentIntent(
-                PendingIntent.getActivity(c, 400000 + id, open, PendingIntent.FLAG_IMMUTABLE)
+                PendingIntent.getActivity(
+                    c, 400000 + id, open,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
             )
             .build()
         try {

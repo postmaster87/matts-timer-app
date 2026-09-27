@@ -147,6 +147,9 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
         if (!TimerEngine.timerActive) TimerEngine.selectPreset(TimerEngine.DEFAULT_SEC)
         mode = if (!TimerEngine.timerActive && (TimerEngine.swRunning || TimerEngine.swMs() > 0))
             MODE_SW else MODE_TIMER
+        // the missed-alarm card or the status-bar alarm icon: open on ALARM.
+        // A rebuild after the process was reclaimed is not a fresh open.
+        if (savedInstanceState == null && alarmTabAsked(intent)) mode = MODE_ALARM
 
         bind()
         buildPresets()
@@ -157,6 +160,24 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
         syncPresets()
         setMode(mode)
         watchStage()
+    }
+
+    /**
+     * singleTop: a tap on the missed-alarm card or the status-bar alarm icon
+     * while the app is up lands here. It redraws through setMode, never onTab,
+     * so it does not silence a timer ring-out - only his own tab tap does that.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (alarmTabAsked(intent)) setMode(MODE_ALARM)
+    }
+
+    /** true once per intent: the extra is removed so a later return does not force the tab */
+    private fun alarmTabAsked(i: Intent?): Boolean {
+        if (i?.getStringExtra(AlarmEngine.EXTRA_TAB) != AlarmEngine.TAB_ALARM) return false
+        i.removeExtra(AlarmEngine.EXTRA_TAB)
+        return true
     }
 
     override fun onStart() {
@@ -348,6 +369,10 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
         editPm.setOnClickListener { readEditWheels(); editPmOn = true; paintEditor() }
         editCancel.setOnClickListener { closeEditor(); TimerEngine.buzz(20) }
         editDelete.setOnClickListener {
+            if (!delArmed) {
+                armDelete()                 // first tap only asks
+                return@setOnClickListener
+            }
             if (editId != -1) AlarmEngine.delete(editId)
             closeEditor()
             TimerEngine.buzz(30)
@@ -1159,8 +1184,8 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
             }
             typeable(np) { commitEditTyped() }
         }
-        editHour.setOnValueChangedListener { _, _, v -> editH12 = v }
-        editMin.setOnValueChangedListener { _, _, v -> editM = v }
+        editHour.setOnValueChangedListener { _, _, v -> editH12 = v; disarmDelete() }
+        editMin.setOnValueChangedListener { _, _, v -> editM = v; disarmDelete() }
 
         editDaysBox.removeAllViews()
         dayBtns.clear()
@@ -1183,13 +1208,41 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
 
         editOverlay.setBackgroundColor(Color.rgb(6, 9, 13))
         styleBtn(editCancel, cPanel2, cText, 14f, cLine)
+        delTextPx = editDelete.textSize     // the layout's size, fresh from inflation
         styleBtn(editDelete, cPanel2, cRed, 14f, cRed)
         styleBtn(editSave, cCyan, cInkCyan, 14f)
         paintEditor()
     }
 
+    // DELETE asks once: the first tap arms it for DEL_ARM_MS, the second deletes
+    private var delArmed = false
+    private var delTextPx = 0f
+    private val disarmRun = Runnable { disarmDelete() }
+
+    private fun armDelete() {
+        readEditWheels()                    // keep anything typed into a wheel
+        delArmed = true
+        editDelete.text = "TAP AGAIN TO DELETE"
+        editDelete.textSize = 12f
+        styleBtn(editDelete, cRed, cBg, 14f)
+        TimerEngine.buzz(15)
+        h.removeCallbacks(disarmRun)
+        h.postDelayed(disarmRun, DEL_ARM_MS)
+    }
+
+    /** back to plain DELETE: time out, or any other action in the editor */
+    private fun disarmDelete() {
+        h.removeCallbacks(disarmRun)
+        if (!delArmed) return
+        delArmed = false
+        editDelete.text = "DELETE"
+        editDelete.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, delTextPx)
+        styleBtn(editDelete, cPanel2, cRed, 14f, cRed)
+    }
+
     /** the editor's state onto its views */
     private fun paintEditor() {
+        disarmDelete()                      // AM / PM, a day, opening the editor
         editHour.value = editH12
         editMin.value = editM
         pickInput(editMin)?.setText(two(editMin.value))
@@ -1226,6 +1279,7 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
 
     /** CANCEL, SAVE, DELETE, back: the keyboard goes with it */
     private fun closeEditor() {
+        disarmDelete()
         editHour.clearFocus()
         editMin.clearFocus()
         hideKeyboard()
@@ -1235,6 +1289,7 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
 
     /** the number pad's check key: commit what was typed, drop the keyboard - it does not save */
     private fun commitEditTyped() {
+        disarmDelete()
         readEditWheels()
         pickInput(editMin)?.setText(two(editMin.value))
         hideKeyboard()
@@ -1274,6 +1329,7 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
         private const val MODE_ALARM = "alarm"
         private const val REQ_ALARM_NOTIF = 8
         private const val NOTE_MS = 6000L
+        private const val DEL_ARM_MS = 4000L
         private val DAY_LETTERS = arrayOf("S", "M", "T", "W", "T", "F", "S")
         private val SUB_ON_CYAN = Color.argb(190, 4, 32, 46)
     }
