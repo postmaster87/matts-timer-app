@@ -207,16 +207,11 @@ object AlarmEngine {
         changed()
     }
 
-    private fun lateRing(a: Alarm) {
-        val c = app ?: return
-        try {
-            c.startForegroundService(
-                Intent(c, AlarmService::class.java).setAction(ACT_FIRE).putExtra("id", a.id)
-            )
-        } catch (_: Exception) {
-            // not allowed from here: the next armAll finds it late or missed
-        }
-    }
+    /**
+     * Armed with [Alarm.next] left in the past: setAlarmClock delivers it at
+     * once, through the same exempt PendingIntent an on-time ring uses.
+     */
+    private fun lateRing(a: Alarm) = arm(a)
 
     /** one-shot switches off; repeating moves to its next day after [from] */
     private fun roll(a: Alarm, from: Long) {
