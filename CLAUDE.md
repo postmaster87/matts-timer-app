@@ -151,7 +151,11 @@ in Matt's order, and moves answered items to
   cues, ducking, persistence, the state that outlives the screen; 636
   lines), `TimerService.kt` (foreground service, lock-screen notification,
   wake lock; 233 lines) and `Tones.kt` (synthesised cues; 232 lines)
-  [measured, 2026-09-20, total lines including blanks].
+  [measured, 2026-09-20, total lines including blanks]. Since 2026-09-27
+  (6544c8b) the alarm clock adds `AlarmEngine.kt` (list, storage, arming,
+  fire), `AlarmService.kt` (the ring), `AlarmReceiver.kt` (re-arm on boot,
+  clock and time-zone change) and `AlarmActivity.kt` (the full-screen
+  ringing screen); the line counts above are older than that build.
 - Build: `android\gradlew.bat -p android assembleRelease` (JDK 17,
   compileSdk 35). Output:
   `android/app/build/outputs/apk/release/app-release.apk`.

@@ -40,7 +40,10 @@ B, 11. If it is verification testing just close it, 12. effort is high"
 Decoded, with the questions as asked, and Fable's seven design calls
 (D1-D7, his to overturn): `docs/ALARM_SPEC.md`. Permission lines
 `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `USE_FULL_SCREEN_INTENT`
-written by Fable. Open: Opus build, Fable review, phone checks on his word.
+written by Fable. Built at ccca359, fix at 6544c8b, reviewed and signed by
+Fable (`docs/DECISIONS_LOG.md`, 2026-09-27). Open: the phone check, on his
+word (list in `docs/ALARM_SPEC.md` Section 12); his ears on the four wake
+voices and the ramp; his word on D1-D7.
 
 ## 2. Phone check - CLOSED by Matt 2026-09-27
 

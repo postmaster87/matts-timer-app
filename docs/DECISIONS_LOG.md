@@ -298,3 +298,74 @@ about 11:29 for the lock-screen read, so it reaches TIME and rings for up
 to 2 minutes on its own; music stays ducked until RESET/RESTART.
 `dist/MattsTimer.apk` not replaced.
 
+## 2026-09-27 - Phone check of f3ba666 closed by Matt, not passed
+
+Asked whether to close the open checks before the alarm build, his words:
+"If it is verification testing just close it". The open items (lock-screen
+card style, duck depth, chime climb, lock-screen buttons, rotation with
+the picker open, typed 5 in minutes, kill/restore, ten-minute rule, pause
+at 0:00) were not run [verify, n=0]. `dist/MattsTimer.apk` not replaced.
+
+## 2026-09-27 - Alarm clock: Fable review of ccca359 + 6544c8b - SIGNED for phone check
+
+Matt's words: "Okay lets add in an alarm clock feature next". His answers
+to the twelve questions, his words: "1. yes, 2. B, 3. B, 4. 12 hour, 5 A,
+6. ignores mute but I need more sound options in needs to be something
+that can wake but not annoy me, 7. 15 minutes, 8. yes, 9. A, 10. B, 11. If
+it is verification testing just close it, 12. effort is high". Spec
+`docs/ALARM_SPEC.md` by Fable (a025c8d, with the three permission lines
+`USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `USE_FULL_SCREEN_INTENT`
+written by Fable). Built by Opus at ccca359; one fix at 6544c8b.
+
+Read line by line against the spec [measured, n=1 read]: `AlarmEngine.kt`,
+`AlarmService.kt`, `AlarmReceiver.kt`, `AlarmActivity.kt`, and the diffs
+to `TimerEngine.kt`, `Tones.kt` and the manifest.
+
+- Storage is the device-protected `alarms` prefs; none of the four alarm
+  files references `TimerEngine` (grep: 0).
+- `nextTrigger`: Calendar in the default zone, add a day if at or before
+  now, step to a set weekday bit, hour and minute re-set after each day
+  added.
+- Arming: `setAlarmClock` with a `getForegroundService` PendingIntent,
+  request code the alarm id; `SecurityException` sets `armFailed`.
+- `fire()` rolls the alarm and commits before any sound; a second fire
+  while ringing keeps the running ring; a fire more than 60 s early is
+  re-armed and dropped.
+- Service: `startForeground` on every start, `specialUse`, START_STICKY,
+  wake lock `matttimer:alarm` with a 16-minute timeout, focus
+  GAIN_TRANSIENT / USAGE_ALARM, gain `min(1, 0.08 + 0.92 * t / 90 s)`, no
+  phrase starts past 900,000 ms, then the missed card. Every end path
+  stops the track, cancels the buzz, abandons focus, releases the lock.
+  It never reads the timer's `sound`.
+- Manifest: three components added, all `exported="false"` and
+  direct-boot aware; `exported="true"` appears once; the eight permission
+  lines untouched by Opus. `TimerEngine.kt` changed by the two mirror
+  lines only; `TimerService.kt` and the gradle files have no diff.
+- `Tones.kt`: the new `Ev` fields default to the old values, so the timer
+  cues render as before; `play` returns a handle the timer ignores.
+- Opus's ten departures read and accepted (full-screen intent attached
+  only when a ring is starting or held; channels created from a companion
+  function; in-process `ringing` flag; sticky resume continues the ramp;
+  `armAll` always commits; the rest are UI choices the spec left open).
+- No INTERNET, no stream volume write (grep: 0 each).
+
+Finding, fixed at 6544c8b: `lateRing` started the service directly and
+swallowed a refused start, leaving the alarm on with `next` in the past
+and nothing armed. It now arms the alarm with its past trigger, which
+`setAlarmClock` delivers at once through the same PendingIntent an on-time
+ring uses [design; phone behavior verify, n=0]. Diff read: 5 lines added,
+10 removed, nothing else touched.
+
+Build: `assembleRelease` passes on the committed tree at 6544c8b, APK
+702,757 bytes [measured, n=1]. No tests exist.
+
+Seen, not built: a tap on the missed card or the status-bar alarm icon
+opens the app on the TIMER tab; DELETE has no confirm; a quick second tap
+on SOUND plays a preview over the one still ringing out.
+
+Everything on-phone is [verify, n=0], including: a non-exported receiver
+getting the boot broadcast, ringing before the first unlock, whether
+full-screen needs a manual grant, and Samsung's battery settings letting
+the alarm through. Not DONE until the phone check passes. Install waits on
+Matt's word.
+
