@@ -1,15 +1,18 @@
 # Matt's Timer
 
 Native Android gym timer. Countdown with presets and a tap-the-clock wheel
-picker, plus a stopwatch. Big targets, high contrast, one-tap repeats for
-back-to-back sets.
+picker, plus a stopwatch and an alarm clock. Big targets, high contrast,
+one-tap repeats for back-to-back sets.
 
 **Runs entirely on the phone.** There is no `INTERNET` permission, so it cannot
 reach the network even if it wanted to. Nothing loads, nothing syncs, nothing
-needs signal. The five permissions it does declare are `VIBRATE`,
-`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`
-and `WAKE_LOCK` - all of them local to the phone, all of them there so a set
-keeps running with the app closed [measured, 2026-09-20, read of the manifest].
+needs signal. The eight permissions it does declare are all local to the phone
+[measured, 2026-09-27, read of the manifest, n=8 lines]: `VIBRATE`,
+`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS` and
+`WAKE_LOCK`, so a set keeps running with the app closed; and `USE_EXACT_ALARM`,
+`RECEIVE_BOOT_COMPLETED` and `USE_FULL_SCREEN_INTENT`, accepted by Matt on
+2026-09-27 for the alarm clock - it fires on the minute, it survives a restart,
+and it takes the full screen on a locked phone.
 
 Install: `dist/MattsTimer.apk`  ·  Reading copy: `docs/TIMER.pdf`
 
@@ -21,7 +24,11 @@ Install: `dist/MattsTimer.apk`  ·  Reading copy: `docs/TIMER.pdf`
 | `android/app/src/main/java/com/matt/gymtimer/MainActivity.kt` | The screen: layout, presets, picker, laps, rendering |
 | `android/app/src/main/java/com/matt/gymtimer/TimerEngine.kt` | The timer itself: clock math, cues, ducking, state that outlives the screen |
 | `android/app/src/main/java/com/matt/gymtimer/TimerService.kt` | Foreground service: the lock-screen notification and the wake lock |
-| `android/app/src/main/java/com/matt/gymtimer/Tones.kt` | Synthesised bell cues (PCM, no audio assets) |
+| `android/app/src/main/java/com/matt/gymtimer/Tones.kt` | Synthesised bell cues and the alarm's wake voices (PCM, no audio assets) |
+| `android/app/src/main/java/com/matt/gymtimer/AlarmEngine.kt` | The alarm clock: the list, its storage, next-ring math, arming, the fire decision |
+| `android/app/src/main/java/com/matt/gymtimer/AlarmService.kt` | Foreground service while an alarm rings: sound, buzz, wake lock, notification, missed card |
+| `android/app/src/main/java/com/matt/gymtimer/AlarmReceiver.kt` | Re-arms the alarms after a restart, an update, a clock or time-zone change |
+| `android/app/src/main/java/com/matt/gymtimer/AlarmActivity.kt` | The ringing screen over the lock screen: the time and STOP |
 | `android/app/src/main/res/layout/` | Portrait layout; `layout-land/` is the two-column landscape one |
 | `dist/MattsTimer.apk` | Installable release build |
 | `tools/make_android_icons.py` | Regenerates launcher icons (pure stdlib) |
@@ -184,6 +191,90 @@ separately. Both settings persist.
 Laps show split and cumulative, newest first. A running stopwatch keeps running
 with the app closed and shows on the lock screen too; laps are not kept if the
 process is killed [design].
+
+## Alarm
+
+His words, 2026-09-27: *"Okay lets add in an alarm clock feature next"*. His
+answers to the twelve questions are in `docs/ALARM_SPEC.md` Section 1; the
+design calls D1-D7 there are Fable's and his to overturn. Everything below is
+built to that spec and none of it has been run on the phone yet
+[verify, n=0].
+
+**Third tab, `ALARM`.** Tapping it silences a timer ring-out the same way the
+other tabs do. The presets, the clock, the bar and the three big buttons give
+way to [design]:
+
+- a status line - `NEXT  5:30 AM  ·  IN 7H 12M`, or `NO ALARM SET` - that moves
+  on the minute while the tab is up; a day or more out reads `IN 2D 3H 12M`;
+- the list, one row per alarm, earliest time of day first: the time large in
+  12-hour form, under it `ONCE`, `EVERY DAY`, `WEEKDAYS`, `WEEKENDS` or the
+  days (`M W F`), and an ON / OFF switch at the right (76 x 56 dp). The row
+  opens the editor; the switch only switches;
+- `SOUND  ·  DAWN` - a tap moves to the next alarm sound and plays its preview
+  at full volume;
+- `ADD ALARM`, full width, the height of the big buttons.
+
+Amber lines appear only when true: `NOTIFICATIONS OFF  ·  TAP TO ALLOW` (asks
+for the permission; once the phone will no longer show that question, the tap
+opens the app's notification settings instead), `FULL SCREEN OFF  ·  TAP TO
+ALLOW` (Android 14 and up; opens the phone's full-screen setting for this app),
+and `ALARM COULD NOT BE SET` [design].
+
+**Several alarms, each with its own switch; each one-shot or on chosen days**
+(his answers 2 and 3). The editor looks like the timer's picker: an hour wheel
+1-12 and a minute wheel 00-59, both typeable with the number pad, `AM` / `PM`,
+and seven day buttons `S M T W T F S` - none lit means it rings once. `CANCEL`,
+`SAVE`, and `DELETE` when editing one that exists. The pad's check key only
+puts the typed number in; it does not save. A new alarm opens on 6:00 AM. Back
+closes it; rotation keeps it. After SAVE a line reads `RINGS IN 7H 12M` for
+six seconds, and the first save asks for notifications if nothing has asked
+yet [design]. Up to 20 alarms; the cap is not shown (D7).
+
+**When it rings** - with the app closed and the screen off, and on a locked
+phone over the lock screen as a full screen: `ALARM`, the time, one `STOP`
+button across the width (his answer 10) [design; verify, n=0]. STOP is on the
+notification too. There is no snooze (his answer 5). A one-shot alarm switches
+itself off when it rings; a repeating one moves to its next day before a note
+plays [design].
+
+**Sound.** The alarm **ignores MUTE** (his answer 6) and has its own sound
+setting, one for all alarms (D4). His words: *"something that can wake but not
+annoy me"*. Four new wake voices, then the timer's three chimes:
+
+| Sound | Character |
+|---|---|
+| **DAWN** | Four notes climbing slowly, G-C-E-G, settling on a C major chord. The default |
+| **HARP** | A quick pentatonic ripple up and back down, landing on C and G |
+| **TIDE** | No melody: two soft chords that swell in and ebb away |
+| **LILT** | Falling three-note figures, one a second, resting on A and E |
+| **BELL / CHIME / PULSE** | The timer's own finish chimes |
+
+The four new ones are soft struck tones - every fundamental 880 Hz or lower, a
+40 ms to 1 s attack, a fade at the end of every note, no clipped tones
+[measured by a scratch render of the same math, n=4 voices]. A phrase runs 4.6
+to 6.7 s and a preview 2.0 to 2.9 s [measured, same render, n=4]. They are
+rendered the first time they play, so the timer opens no slower [design].
+
+**It starts quiet and rises (D3).** The first phrase plays at 8% and the level
+climbs in a straight line to 100% at 90 seconds, then holds. 100% is his
+alarm volume as it already is; no stream volume is ever written [measured: no
+`setStreamVolume`, `adjustVolume` or `adjustStreamVolume` in the source]. A
+phrase repeats 1.5 s after the last one ends. The buzz fires with every phrase
+when the timer's VIB is on, as it stood the last time the app was open (D5).
+Music playing when it fires is paused or ducked for the ring and comes back
+after [design; verify, n=0].
+
+**Fifteen minutes untouched and it stops** (his answer 7): no phrase starts
+past 15 minutes, and a `MISSED ALARM` card with the time is left in the
+notifications [design; verify, n=0].
+
+**Restarts, updates, clock and time-zone changes (D1, D2, D6).** Every alarm is
+re-armed, and 5:30 AM stays 5:30 AM local after a time-zone change. After a
+restart it rings **before the phone is unlocked** - the alarm keeps its own
+small store the phone can read before the first unlock [design; verify, n=0].
+An alarm whose time passed while the phone was off rings as soon as the phone
+is back up if that was 15 minutes ago or less; longer ago, it does not ring and
+leaves a `MISSED ALARM` card [design; verify, n=0].
 
 **Screen stays awake while anything is counting - and while the chime is still
 repeating** - and releases as soon as that stops, so with the app in front the

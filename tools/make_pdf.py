@@ -54,7 +54,8 @@ F = []
 F.append(Paragraph("Matt's Timer", H1))
 F.append(Paragraph(
     "Native Android app. Countdown timer + stopwatch, built for back-to-back sets, "
-    "and it keeps running with the app closed. Installs from dist/MattsTimer.apk - "
+    "plus an alarm clock, and it keeps running with the app closed. Installs from "
+    "dist/MattsTimer.apk - "
     "under 700 KB, no dependencies.", SUB))
 
 F.append(Paragraph("It cannot use the internet", H2))
@@ -64,9 +65,12 @@ F.append(Paragraph(
     "nothing needs signal. The chimes are synthesised on the device at startup "
     "rather than shipped as audio files.", BODY))
 F.append(Paragraph(
-    "The five permissions it does declare are all local to the phone: VIBRATE, "
+    "The eight permissions it does declare are all local to the phone: VIBRATE, "
     "and - so a set keeps running with the app closed - FOREGROUND_SERVICE, "
-    "FOREGROUND_SERVICE_SPECIAL_USE, POST_NOTIFICATIONS and WAKE_LOCK.", BODY))
+    "FOREGROUND_SERVICE_SPECIAL_USE, POST_NOTIFICATIONS and WAKE_LOCK; and for the "
+    "alarm clock, accepted on 2026-09-27, USE_EXACT_ALARM (it fires on the minute), "
+    "RECEIVE_BOOT_COMPLETED (it survives a restart) and USE_FULL_SCREEN_INTENT (it "
+    "takes the full screen on a locked phone).", BODY))
 
 F.append(Paragraph("The one rule that drives the layout", H2))
 F.append(Paragraph(
@@ -220,6 +224,57 @@ F.append(Paragraph(
     "screen stays awake while anything is counting - and while the chime is still "
     "repeating - and releases as soon as that stops; rotating the phone rebuilds the "
     "layout without disturbing a live set, or an open wheel picker.", BODY))
+
+F.append(Paragraph("Alarm clock", H2))
+F.append(Paragraph(
+    "<i>\"Okay lets add in an alarm clock feature next\"</i> - Matt, 2026-09-27. "
+    "Built to docs/ALARM_SPEC.md; <b>none of this has been run on the phone yet "
+    "[verify, n=0]</b>.", BODY))
+F.append(Paragraph(
+    "<b>Third tab, ALARM.</b> The presets, clock and big buttons give way to a status "
+    "line (NEXT 5:30 AM &middot; IN 7H 12M, or NO ALARM SET) that moves on the minute, "
+    "the list of alarms - earliest time of day first, each with its time, ONCE / "
+    "EVERY DAY / WEEKDAYS / WEEKENDS or its days (M W F), and an ON / OFF switch - a "
+    "SOUND button and ADD ALARM. Tapping a row opens the editor; the switch only "
+    "switches. Amber lines appear only when something is wrong: notifications off, "
+    "full screen off (Android 14 and up), or an alarm that could not be set; the first "
+    "two open the fix when tapped. Up to 20 alarms.", BODY))
+F.append(Paragraph(
+    "<b>The editor</b> looks like the timer's picker: an hour wheel 1-12 and a minute "
+    "wheel 00-59, both typeable, AM / PM, and seven day buttons S M T W T F S - none "
+    "lit rings once. CANCEL, SAVE, and DELETE for an existing alarm. The number pad's "
+    "check key only puts the number in; it does not save. After SAVE a line reads "
+    "RINGS IN 7H 12M for six seconds.", BODY))
+F.append(Paragraph(
+    "<b>When it rings</b> - app closed, screen off, phone locked - it takes the full "
+    "screen: ALARM, the time, and one wide STOP. STOP is on the notification too. No "
+    "snooze. A one-shot alarm switches itself off; a repeating one moves on to its next "
+    "day before a note plays.", BODY))
+F.append(table([
+    ["Sound", "Character"],
+    ["DAWN", "Four notes climbing slowly, G-C-E-G, settling on a C major chord. The default"],
+    ["HARP", "A quick pentatonic ripple up and back down, landing on C and G"],
+    ["TIDE", "No melody: two soft chords that swell in and ebb away"],
+    ["LILT", "Falling three-note figures, one a second, resting on A and E"],
+    ["BELL / CHIME / PULSE", "The timer's own finish chimes"],
+], [1.5 * inch, 4.6 * inch]))
+F.append(Spacer(1, 5))
+F.append(Paragraph(
+    "<b>It ignores MUTE</b> and has its own sound, one setting for every alarm; each "
+    "tap of SOUND plays a preview of three seconds or less. The four new sounds were "
+    "made to wake without annoying: soft struck tones, nothing above 880 Hz, slow "
+    "attacks, every note faded out, 4.6 to 6.7 seconds a phrase. <b>It starts quiet "
+    "and rises:</b> 8% on the first phrase, climbing in a straight line to full at 90 "
+    "seconds, where full is your alarm volume as it already is - no volume slider is "
+    "ever moved. A phrase repeats 1.5 s after the last ends, with the buzz when the "
+    "timer's VIB is on.", BODY))
+F.append(Paragraph(
+    "<b>Fifteen minutes untouched and it stops</b>, leaving a MISSED ALARM card with "
+    "the time. After a restart, an update, or a clock or time-zone change every alarm "
+    "is re-armed (5:30 AM stays 5:30 AM local), and after a restart it rings even "
+    "before the phone is unlocked. An alarm whose time passed while the phone was off "
+    "rings when the phone comes back if that was 15 minutes ago or less; longer ago it "
+    "leaves a MISSED ALARM card instead.", BODY))
 
 F.append(Paragraph("Install on the phone", H2))
 F.append(Paragraph(

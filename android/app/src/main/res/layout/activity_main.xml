@@ -57,6 +57,22 @@
                     android:autoSizeMinTextSize="9sp"
                     android:autoSizeMaxTextSize="13sp"
                     android:autoSizeStepGranularity="1sp" />
+
+                <Button
+                    android:id="@+id/tabAlarm"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="ALARM"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:letterSpacing="0.06"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="9sp"
+                    android:autoSizeMaxTextSize="13sp"
+                    android:autoSizeStepGranularity="1sp" />
             </LinearLayout>
 
             <Button
@@ -161,8 +177,117 @@
             </FrameLayout>
         </LinearLayout>
 
+        <!-- ALARM tab: status, warnings, the list, sound, ADD ALARM -->
+        <LinearLayout
+            android:id="@+id/alarmPanel"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/alarmStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingTop="8dp"
+                android:paddingBottom="4dp"
+                android:maxLines="1"
+                android:textColor="@color/text"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12" />
+
+            <TextView
+                android:id="@+id/alarmNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingBottom="4dp"
+                android:maxLines="1"
+                android:textColor="@color/green"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/warnNotif"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:gravity="center"
+                android:text="NOTIFICATIONS OFF  ·  TAP TO ALLOW"
+                android:textColor="@color/amber"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/warnFull"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:gravity="center"
+                android:text="FULL SCREEN OFF  ·  TAP TO ALLOW"
+                android:textColor="@color/amber"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/warnArm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:gravity="center"
+                android:text="ALARM COULD NOT BE SET"
+                android:textColor="@color/amber"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:visibility="gone" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="4dp">
+
+                <LinearLayout
+                    android:id="@+id/alarmList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
+
+            <Button
+                android:id="@+id/alarmSound"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/alarm_sound_h"
+                android:layout_marginTop="10dp"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+
+            <Button
+                android:id="@+id/alarmAdd"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/btn_h"
+                android:layout_marginTop="10dp"
+                android:text="ADD ALARM"
+                android:textSize="21sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.06" />
+        </LinearLayout>
+
         <!-- the two big ones -->
         <LinearLayout
+            android:id="@+id/btnRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -277,6 +402,129 @@
                 android:layout_weight="1.4"
                 android:layout_marginStart="12dp"
                 android:text="SET &amp; START"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- alarm editor: HOUR : MIN wheels, AM / PM, the days, CANCEL / DELETE / SAVE -->
+    <LinearLayout
+        android:id="@+id/editOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="14dp"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:fitsSystemWindows="true">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="SET THE ALARM  ·  HOUR : MIN"
+            android:textColor="@color/dim"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.22" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <NumberPicker
+                android:id="@+id/editHour"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/pick_wheel_h"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:text=":"
+                android:textColor="@color/dim"
+                android:textSize="40sp"
+                android:textStyle="bold" />
+
+            <NumberPicker
+                android:id="@+id/editMin"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/pick_wheel_h"
+                android:layout_weight="1" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/editAm"
+                    android:layout_width="76dp"
+                    android:layout_height="@dimen/ampm_h"
+                    android:text="AM"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/editPm"
+                    android:layout_width="76dp"
+                    android:layout_height="@dimen/ampm_h"
+                    android:layout_marginTop="10dp"
+                    android:text="PM"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- S M T W T F S, built in code -->
+        <LinearLayout
+            android:id="@+id/editDays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/editCancel"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/pick_btn_h"
+                android:layout_weight="1"
+                android:text="CANCEL"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/editDelete"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/pick_btn_h"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="DELETE"
+                android:textSize="19sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/editSave"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/pick_btn_h"
+                android:layout_weight="1.4"
+                android:layout_marginStart="12dp"
+                android:text="SAVE"
                 android:textSize="19sp"
                 android:textStyle="bold" />
         </LinearLayout>

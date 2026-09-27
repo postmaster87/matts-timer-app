@@ -123,6 +123,7 @@ object TimerEngine {
             c.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
         loadSettings()
+        AlarmEngine.mirrorVibe(vibe)
         restore()
         changed()
     }
@@ -449,6 +450,7 @@ object TimerEngine {
     fun toggleVibe() {
         vibe = !vibe
         saveSettings()
+        AlarmEngine.mirrorVibe(vibe)
         if (vibe) buzz(80)
         fire()
     }

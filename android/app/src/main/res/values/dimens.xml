@@ -5,4 +5,7 @@
     <dimen name="pick_btn_h">72dp</dimen>
     <dimen name="pick_wheel_h">260dp</dimen>
     <dimen name="digits_max">190sp</dimen>
+    <dimen name="alarm_sound_h">56dp</dimen>
+    <dimen name="ampm_h">64dp</dimen>
+    <dimen name="day_btn_h">52dp</dimen>
 </resources>
