@@ -251,7 +251,9 @@ F.append(Paragraph(
     "editor, back, or turning the phone, it goes back to plain DELETE. No dialog.", BODY))
 F.append(Paragraph(
     "<b>When it rings</b> - app closed, screen off, phone locked - it takes the full "
-    "screen: ALARM, the time, and one wide STOP. STOP is on the notification too. No "
+    "screen: ALARM, the time, and one wide STOP. STOP is on the notification too. With "
+    "the app in front it opens the same screen over the app, and again whenever you come "
+    "back to the app before the ring ends; what was open underneath stays as it was. No "
     "snooze. A one-shot alarm switches itself off; a repeating one moves on to its next "
     "day before a note plays.", BODY))
 F.append(table([

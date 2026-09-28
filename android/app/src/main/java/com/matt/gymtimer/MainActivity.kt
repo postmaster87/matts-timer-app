@@ -49,6 +49,8 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
 
     private var mode = MODE_TIMER
     private var started = false
+    private var resumed = false                  // onResume..onPause: the ring may open over us
+    private var ringShown = false                // this ring's screen already opened since onStart
 
     // picker overlay (kept across a rotation rebuild)
     private var pickOpen = false
@@ -185,6 +187,8 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
         started = true
         TimerEngine.addListener(this)
         AlarmEngine.addListener(this)
+        ringShown = false
+        showRingIfLive()
         if (mode == MODE_ALARM) renderAlarms()
         syncPresets()
         if (mode == MODE_SW) renderLaps()
@@ -192,6 +196,16 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
         keepAwake(TimerEngine.running || TimerEngine.swRunning || TimerEngine.alarming)
         render()
         loopOn()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        resumed = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        resumed = false
     }
 
     override fun onStop() {
@@ -215,7 +229,20 @@ class MainActivity : Activity(), TimerEngine.Listener, AlarmEngine.Listener {
     /** the alarm engine calls this on every change to the list, the voice or a ring */
     override fun onAlarmState() {
         if (!started) return
+        if (!AlarmEngine.ringing) ringShown = false
+        else if (resumed && !ringShown) showRingIfLive()
         if (mode == MODE_ALARM) renderAlarms()
+    }
+
+    /**
+     * "the stop button should be on the screen when the alarm is firing" - Matt,
+     * 2026-09-28. A ring live with this screen in front opens the ringing screen
+     * (ALARM, the time, STOP) over it; whatever was open here stays as it was.
+     */
+    private fun showRingIfLive() {
+        if (!AlarmEngine.ringing) return
+        ringShown = true
+        startActivity(Intent(this, AlarmActivity::class.java))
     }
 
     /** the engine calls this on every state change, however it was caused */

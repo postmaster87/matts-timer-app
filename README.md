@@ -240,7 +240,12 @@ on any other action in the editor - a wheel, `AM` / `PM`, a day, `CANCEL`,
 **When it rings** - with the app closed and the screen off, and on a locked
 phone over the lock screen as a full screen: `ALARM`, the time, one `STOP`
 button across the width (his answer 10) [design; verify, n=0]. STOP is on the
-notification too. There is no snooze (his answer 5). A one-shot alarm switches
+notification too. His words, 2026-09-28: *"it rang fine the stop button should
+be on the screen when the alarm is firing"* - so with the app in front while
+it rings, the same ringing screen opens over it, and opens again whenever he
+comes back to the app before the ring ends; whatever was open underneath (the
+editor, the wheel picker) is still there after STOP [design; verify, n=0].
+There is no snooze (his answer 5). A one-shot alarm switches
 itself off when it rings; a repeating one moves to its next day before a note
 plays [design].
 
