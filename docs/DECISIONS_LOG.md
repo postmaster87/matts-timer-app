@@ -412,3 +412,83 @@ Not done from this session: the app was not launched, no input was sent,
 no setting was changed. Every alarm behavior on the phone is
 [verify, n=0]. `dist/MattsTimer.apk` not replaced. Not pushed.
 
+
+## 2026-09-28 - Alarm phone check, checks 1-7 (Fable, adb-driven) - 5 PASS, 3 not run; STOP-on-screen build 68019db SIGNED, not installed
+
+Matt's words: "If I plug my phone in can you test the alarm app out for
+me?" then "Phone is plugged in. 1 - 7 are a go hold on the rest". Checks
+8-11 (15-minute cut, his ears on the voices, restart, time zone) are on
+hold on his word. Phone RFGL4275NVH, build 933ef88 (installed
+2026-09-27 08:39:29), unlocked by him. Golf-tracker sessions all offline
+[measured, n=1 read of the session list]. Guarded driver: every input
+sent only with `com.matt.gymtimer` resumed; no BACK, HOME or recents.
+
+Ring 1: one-shot 6:26 AM, phone unlocked, app in front, timer voice MUTE,
+5m timer running. Ring 2: 6:44 AM EVERY DAY, phone unlocked, app in
+front. All [measured, n=1] unless marked.
+
+PASS
+- Check 3 (STOP from the card): ring 1 ended at 06:29:41.712 - wake lock
+  `matttimer:alarm` released, audio focus abandoned, AlarmService gone,
+  card gone. Ring 2 the same at 06:46:23 [n=2].
+- Check 4 (MUTE on the timer, alarm sounds): alarm AudioTrack started
+  with `USAGE_ALARM` while the timer voice read MUTE. His ears, his
+  words: "it rang fine".
+- Check 5 (one-shot switches itself off): row `6:26 AM / ONCE / OFF`,
+  status `NO ALARM SET`, nothing armed in `dumpsys alarm`.
+- Check 6 (repeating shows the next day): after ring 2, status `NEXT
+  6:44 AM - IN 23H 58M`, `dumpsys alarm` armed 2026-09-29 06:44:00.000.
+- Check 7 (timer running while the alarm fires): timer reached TIME at
+  06:28:38 on MUTE; the alarm's phrases kept going through it.
+- Also: armed exact (`window=0`, `exactAllowReason=policy_permission`);
+  fired 06:26:00.018 against 06:26:00.000; ramp logged 0.080 at 0 s to
+  0.984 at 88 s, 1.000 from 96 s on, straight line (D3); phrase every
+  7.37 s; focus request 06:26:00.019 paired with its abandon; no warning
+  lines on the ALARM tab; no crash.
+
+NOT RUN [verify, n=0]
+- Check 1 (app closed, screen off), check 2 (full screen over the lock
+  screen), check 3's other half (STOP from the ringing screen). They need
+  his hands (swipe from recents, power button). Ring 2 was set for them;
+  the screen went off at 06:42:27 and was back on, unlocked, app in
+  front, at 06:43:08, so ring 2 fired with the phone in use.
+
+FINDING
+- Phone unlocked: Android does not launch the full-screen intent; Samsung
+  shows a pill for a few seconds. STOP is then in the shade: pull down,
+  expand the Timer group (when the timer card is also up), expand the
+  ALARM card, STOP. Nothing in the app showed the ring.
+- Matt, his words: "it rang fine the stop button should be on the screen
+  when the alarm is firing".
+
+FABLE'S MISS
+- Ring 1: the first STOP tap was sent by coordinate 45 s after the
+  screenshot it came from; the shade had closed and the tap landed on the
+  running timer's clock face (no effect). Ring 1 ran 3 min 41 s. From
+  then on shade taps go to a node read from the screen immediately
+  before the tap. Ring 2 ran 143 s: Fable stopped it from the card when
+  nobody had.
+
+BUILD 68019db (Opus, base a486244) - SIGNED for phone check
+- Fable's design call [design], told to Matt, his to overturn: with the
+  app in front while a ring is live, MainActivity opens the existing
+  AlarmActivity. Screen work only; no Fable-owned file in the diff.
+- Diff read line by line [n=1 read]: `MainActivity.kt` +27 -
+  `showRingIfLive()`, flags `resumed` and `ringShown`, `onResume` /
+  `onPause`; called from `onStart` after `addListener` and from
+  `onAlarmState()` when `resumed && !ringShown`. README.md,
+  tools/make_pdf.py, docs/TIMER.pdf re-run. Manifest, gradle and the five
+  engine/service/receiver files: no diff.
+- Accepted departure: the call sits in `onStart` (the listener is
+  registered there; there was no `onResume`).
+- Follow-up reported by Opus, not fixed, not asked for: in split-screen
+  the ringing screen opens only when the app regains focus.
+- Build passes on the committed tree, APK 703,729 bytes, SHA-256
+  C4FAE816...50DDBE [measured, n=1].
+- Not installed. Every behavior of it on the phone is [verify, n=0].
+
+State left on the phone: Matt's Timer in front, TIMER tab, READY 35S,
+voice PULSE (as found), VIB untouched. One alarm in the list, 6:44 AM
+EVERY DAY, switched OFF; nothing armed for `com.matt.gymtimer`. Alarm
+voice DAWN, as found. No phone setting changed. `dist/MattsTimer.apk`
+not replaced. Not pushed.

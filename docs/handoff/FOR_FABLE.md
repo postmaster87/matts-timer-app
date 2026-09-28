@@ -49,6 +49,21 @@ on RFGL4275NVH 2026-09-27 on his word ("install now check later"); no
 alarm set, nothing checked. Ask him before the check session; the phone
 is shared with the golf-tracker session by message first.
 
+Phone check 2026-09-28, his words: "1 - 7 are a go hold on the rest".
+Checks 3 (card), 4, 5, 6, 7 PASS [measured, n=1]; record in
+`docs/DECISIONS_LOG.md`. Open, in order:
+(a) checks 1, 2 and STOP from the ringing screen - need his hands (swipe
+the app from recents, power button) before a set alarm time;
+(b) his words: "it rang fine the stop button should be on the screen when
+the alarm is firing" - built at 68019db, signed, NOT installed; install
+on his word, then its phone check;
+(c) asked, not answered: alarm firing while he is in another app,
+unlocked - pill plus shade, or look at his Samsung pop-up style setting
+(own prompt first);
+(d) on hold on his word: 15-minute cut and missed card, his ears on the
+four voices, restart without unlock, time zone change.
+A test alarm, 6:44 AM EVERY DAY, is left in the list switched OFF.
+
 ## 2. Phone check - CLOSED by Matt 2026-09-27
 
 His words, asked whether to close the open checks on f3ba666 before the
