@@ -55,14 +55,16 @@ Checks 3 (card), 4, 5, 6, 7 PASS [measured, n=1]; record in
 (a) checks 1, 2 and STOP from the ringing screen - need his hands (swipe
 the app from recents, power button) before a set alarm time;
 (b) his words: "it rang fine the stop button should be on the screen when
-the alarm is firing" - built at 68019db, signed, NOT installed; install
-on his word, then its phone check;
+the alarm is firing" - built at 68019db, signed, installed 2026-09-28 on
+his word ("Do 1"); app-in-front ring PASS [measured, n=1]; leave-and-return,
+card STOP with the screen up, editor open, split-screen [verify, n=0];
 (c) asked, not answered: alarm firing while he is in another app,
 unlocked - pill plus shade, or look at his Samsung pop-up style setting
 (own prompt first);
 (d) on hold on his word: 15-minute cut and missed card, his ears on the
 four voices, restart without unlock, time zone change.
-A test alarm, 6:44 AM EVERY DAY, is left in the list switched OFF.
+Test alarm deleted on his word 2026-09-28; the alarm list is empty. His
+words on (a), (c), (d): "the others have to wait".
 
 ## 2. Phone check - CLOSED by Matt 2026-09-27
 

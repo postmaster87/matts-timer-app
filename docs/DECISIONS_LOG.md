@@ -492,3 +492,33 @@ voice PULSE (as found), VIB untouched. One alarm in the list, 6:44 AM
 EVERY DAY, switched OFF; nothing armed for `com.matt.gymtimer`. Alarm
 voice DAWN, as found. No phone setting changed. `dist/MattsTimer.apk`
 not replaced. Not pushed.
+## 2026-09-28 - 68019db installed; STOP screen with the app in front - PASS; test alarm deleted
+
+Matt's words: "Do 1 the others have to wait. Delete the test alarm". "1"
+is the install of 68019db and the re-run of the app-in-front ring.
+
+- `adb -s RFGL4275NVH install -r` of the reviewed APK (703,729 bytes,
+  SHA-256 C4FAE816...50DDBE): Success, `lastUpdateTime` 2026-09-28
+  06:54:07. Golf-tracker sessions offline [measured, n=1 read]. The
+  alarm list and settings carried over the update.
+- Ring 3, 6:58 AM, phone unlocked, Matt's Timer in front on the ALARM
+  tab [measured, n=1]: at 06:58:00 the resumed activity was
+  `.AlarmActivity` - black screen, `ALARM`, `6:58 AM`, `STOP` button
+  (48,1827)-(1032,2247) of 1080x2340. STOP tapped on that screen at about
+  06:58:16: wake lock released, resumed activity back to `.MainActivity`
+  on the ALARM tab. This is also the first STOP from the ringing screen
+  [n=1]; over the lock screen it is still [verify, n=0].
+- Two-tap DELETE [measured, n=1]: DELETE turned to `TAP AGAIN TO
+  DELETE`; left alone it went back to DELETE (first try, the second tap
+  came too late); tapped twice inside the window the alarm was removed.
+- Not checked on 68019db [verify, n=0]: leaving the ringing screen and
+  coming back, STOP from the card while the screen is up, editor or
+  picker open when it rings, split-screen.
+
+Still waiting, his word: checks 1 and 2 (his hands), the other-app
+question, checks 8-11.
+
+State left on the phone: Matt's Timer 68019db in front, TIMER tab, READY
+35S, voice PULSE, alarm voice DAWN, alarm list empty (`NO ALARM SET`),
+nothing armed for `com.matt.gymtimer`. No phone setting changed.
+`dist/MattsTimer.apk` not replaced. Not pushed.
