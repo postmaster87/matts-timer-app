@@ -522,3 +522,47 @@ State left on the phone: Matt's Timer 68019db in front, TIMER tab, READY
 35S, voice PULSE, alarm voice DAWN, alarm list empty (`NO ALARM SET`),
 nothing armed for `com.matt.gymtimer`. No phone setting changed.
 `dist/MattsTimer.apk` not replaced. Not pushed.
+## 2026-09-28 - Alarm phone check: screen off, locked, full screen, STOP on the ringing screen - PASS
+
+Matt's words: "okay you can have a few minutes to test what you need on
+my phone keep the volume low and alarms short. Don't worry about the 15
+minute test". Check 8 (15-minute cut and missed card) is dropped on his
+word, not passed [verify, n=0].
+
+Phone RFGL4275NVH, build 68019db. The calendar session had finished
+(0.3.2 installed 11:57:10); a notice went to the three busy sessions,
+no "busy" came back; "timer off" sent after. Volume kept low by stopping
+inside the ramp, no volume or other setting written.
+
+Ring 4, one-shot 2:38 PM [measured, n=1]:
+- Set from the editor with hour typed 2, minute typed 38, PM; armed
+  14:38:00.000 exact.
+- Screen turned off by Fable with the sleep key (app in front when
+  sent); 8 s later `mWakefulness=Dozing`, `isKeyguardShowing=true`.
+- `am kill com.matt.gymtimer` did NOT end the process (pid 28084 before
+  and after), so this ring is screen off and locked with the process
+  alive. Ringing from a dead process (swiped from recents) is still
+  [verify, n=0].
+- 14:38:00.021 wake lock taken; at 14:38:01 the phone was Awake, keyguard
+  still showing, resumed activity `.AlarmActivity`: black screen,
+  `ALARM`, `2:38 PM`, `STOP` (48,1827)-(1032,2247). Checks 1 (screen
+  off) and 2 (full screen over the lock screen): PASS.
+- STOP tapped on that screen: wake lock released 14:38:09.916, ring 9.9
+  s, two phrases at gain 0.080 and 0.156. Phone stayed locked. STOP from
+  the ringing screen over the lock screen: PASS.
+- After: nothing armed with the app's `ALARM_FIRE` tag, no AlarmService,
+  no crash line in the log.
+
+Not run, the phone is locked and Fable does not unlock it: the alarm
+editor open when it rings, STOP from the card while the ringing screen
+is up, leaving the ringing screen and coming back [verify, n=0].
+
+Checks 1-7 now: all PASS [n=1 each, check 3 card n=2], with the one gap
+above (dead process). Still on hold on his word: his ears on the four
+voices, restart without unlock, time zone change, the other-app
+question.
+
+State left on the phone: locked, screen off. The 2:38 PM one-shot is
+still in the alarm list (it could not be deleted with the phone locked;
+it is spent, nothing is armed). No phone setting changed.
+`dist/MattsTimer.apk` not replaced. Not pushed.

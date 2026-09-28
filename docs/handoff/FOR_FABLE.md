@@ -63,7 +63,13 @@ unlocked - pill plus shade, or look at his Samsung pop-up style setting
 (own prompt first);
 (d) on hold on his word: 15-minute cut and missed card, his ears on the
 four voices, restart without unlock, time zone change.
-Test alarm deleted on his word 2026-09-28; the alarm list is empty. His
+Later the same day, his words: "you can have a few minutes to test what
+you need on my phone keep the volume low and alarms short. Don't worry
+about the 15 minute test" - (a) PASS with the screen off and the phone
+locked [measured, n=1]; ringing from a dead process (swiped from recents)
+still [verify, n=0]; the 15-minute cut is dropped. A spent 2:38 PM
+one-shot is left in the alarm list; delete it on his word when the phone
+is unlocked. His
 words on (a), (c), (d): "the others have to wait".
 
 ## 2. Phone check - CLOSED by Matt 2026-09-27
